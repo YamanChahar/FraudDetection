@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 1 Complete & Verified — Awaiting Approval for Phase 2
+- **Overall Status**: Phase 2 Complete & Verified — Awaiting Approval for Phase 3
 
 ---
 
@@ -18,8 +18,8 @@ Authoritative single source of truth for project execution status, technical dec
 | Phase | Description | Status | Approval Received |
 |---|---|---|---|
 | **Phase 0** | Workspace, Environment, and Repository Setup | **VERIFIED** | Yes (Approved) |
-| **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Awaiting Approval to proceed to Phase 2 |
-| **Phase 2** | Preprocessing and Experimental Design | NOT STARTED | Pending |
+| **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Yes (Approved) |
+| **Phase 2** | Preprocessing and Experimental Design | **VERIFIED** | Awaiting Approval to proceed to Phase 3 |
 | **Phase 3** | Logistic Regression Baseline | NOT STARTED | Pending |
 | **Phase 4** | Imbalance Handling Experiments | NOT STARTED | Pending |
 | **Phase 5** | Model Comparison and Selection | NOT STARTED | Pending |
@@ -45,62 +45,104 @@ Authoritative single source of truth for project execution status, technical dec
 ### Phase 1 — Data Validation and Exploratory Data Analysis
 - **Status**: **VERIFIED**
 - **Date Completed**: 2026-10-17
+- **Approval Received**: Explicit approval received from user.
+- **Summary**: Real dataset validated (284,807 rows, 31 columns, 0 nulls). Class imbalance (0.1727% fraud, 577.88:1 ratio) verified. Duplicate records (1,081 rows) audited without mutation. `notebooks/01_eda.ipynb` executed inplace with complete charts and statistical analysis.
+
+---
+
+### Phase 2 — Preprocessing and Experimental Design
+- **Status**: **VERIFIED**
+- **Date Completed**: 2026-10-17
 
 #### 1. Tasks Completed
-- Dataset placed in `data/creditcard.csv` (150,828,752 bytes).
-- Implemented defensive validation module `src/data_validation.py` for schema verification, missing/inf detection, non-destructive duplicate auditing, binary domain checks, and class distribution calculation.
-- Automated unit test suite `tests/test_data_validation.py` passing (13/13 unit tests passed in 1.81s).
-- Created `notebooks/01_eda.ipynb` containing 16 cells for deep exploratory data analysis, class imbalance math, outlier inspection, amount/time distributions, and PCA correlation analysis.
-- Executed `notebooks/01_eda.ipynb` inplace with `nbconvert` on the live dataset; all charts and statistical outputs rendered successfully without unhandled errors.
-- Extracted and recorded actual, non-fabricated dataset statistics directly from execution.
+- Implemented `src/preprocessing.py`:
+  - `prepare_features_and_target()`: Validates input schema, rejects invalid targets/features, separates `X` (30 features) and `y` (`Class`), and preserves canonical feature ordering.
+  - `create_stratified_split()`: Generates reproducible 80/20 train/test split with stratification on `y` and seed 42. Validates disjoint indices and class representation.
+  - `get_split_summary()`: Generates detailed partition metrics and audit reports.
+  - `build_preprocessor()`: Constructs `ColumnTransformer` with `RobustScaler` for `Time` and `Amount` while passing through `V1`–`V28` in exact canonical column order.
+  - `fit_preprocessor()`: Fits transformations **only** on training features to prevent data leakage.
+  - `transform_features()`: Applies fitted transformations returning a DataFrame with preserved canonical column names and original indices.
+  - `verify_leakage_protection()`: Formally verifies that fitted scaler parameters match `X_train` and were not influenced by `X_test`.
+  - `save_preprocessor()` and `load_preprocessor()`: Serializes and deserializes the fitted preprocessor artifact using `joblib`.
+- Installed Phase 2 dependencies (`scikit-learn==1.9.1`, `scipy==1.18.1`, `joblib==1.6.0`, and dependencies) in `.venv`.
+- Updated `requirements.txt` with exact pinned versions.
+- Implemented comprehensive unit test suite in `tests/test_preprocessing.py` (9 tests covering schema extraction, invalid target handling, disjoint index verification, stratified proportions, seed reproducibility, canonical column order preservation, leakage protection, and serialization).
+- Executed full test suite via `pytest` (22 passed in 24.93s, 100% pass rate).
+- Executed preprocessing workflow on the real 284,807-row dataset and verified exact dimensions, class counts, scaling parameters, and leakage protection.
 
-#### 2. Actual Verified Dataset Statistics
-- **Dataset Dimensions**: 284,807 rows x 31 columns.
-- **Missing / Infinite Values**: 0 nulls, 0 NaNs, 0 infinities across all columns.
-- **Target Domain (`Class`)**: Strictly binary `{0, 1}`.
-- **Legitimate Transactions (Class 0)**: 284,315 records (**99.8273%**).
-- **Fraudulent Transactions (Class 1)**: 492 records (**0.1727%**).
-- **Class Imbalance Ratio**: **577.88 : 1** (1 fraudulent transaction per ~578 legitimate transactions).
-- **Duplicate Records Audited**:
-  - Total Duplicates: 1,081 rows (0.3796% of dataset).
-  - Class 0 (Legitimate) Duplicates: 1,062 rows.
-  - Class 1 (Fraudulent) Duplicates: 19 rows.
-  - *Decision*: Preserved in raw dataset without deletion (avoiding data loss and reflecting realistic transaction retry streams).
-- **Transaction Amount ($) Distribution**:
-  - Legitimate (Class 0): Mean = $88.29 | Median = $22.00 | 25% = $5.65 | 75% = $77.05 | Max = $25,691.16 | Std = $250.11
-  - Fraudulent (Class 1): Mean = $122.21 | Median = $9.25 | 25% = $1.00 | 75% = $105.89 | Max = $2,125.87 | Std = $256.68
-  - *Insight*: Fraudulent transactions have a **lower median** ($9.25) than legitimate transactions ($22.00). Fraud is not merely high-dollar purchases; micro-testing amounts ($1.00) are common.
-- **Time Distribution**:
-  - Range: 0.0 to 172,792.0 seconds (~47.99 hours / 2 days).
-  - Temporal cyclical density observed over the 48-hour recording window.
-- **Top Correlations with Class**:
-  - Negative: `V17` (-0.3265), `V14` (-0.3025), `V12` (-0.2606), `V10` (-0.2169), `V16` (-0.1965)
-  - Positive: `V11` (+0.1549), `V4` (+0.1334), `V2` (+0.0913), `V21` (+0.0404), `V19` (+0.0348)
+#### 2. Actual Verified Partition & Preprocessing Statistics
+- **Total Dataset**: 284,807 rows, 30 features + 1 target
+- **Training Set (80%)**:
+  - Dimensions: **227,845 rows x 30 columns**
+  - Legitimate (Class 0): **227,451** records
+  - Fraudulent (Class 1): **394** records
+  - Fraud Percentage: **0.1729%**
+  - Imbalance Ratio: **577.29 : 1**
+- **Test Set (20% - Isolated)**:
+  - Dimensions: **56,962 rows x 30 columns**
+  - Legitimate (Class 0): **56,864** records
+  - Fraudulent (Class 1): **98** records
+  - Fraud Percentage: **0.1720%**
+  - Imbalance Ratio: **580.24 : 1**
+- **Disjoint Index Verification**: `True` (0 overlapping rows between train and test).
+- **Stratification Integrity**: Verified. Both partitions exhibit identical fraud rates (~0.172%).
+- **Fitted RobustScaler Parameters (from X_train only)**:
+  - `Time` Median Center: **84,805.0 seconds** (matches `X_train.median()`; not test data).
+  - `Amount` Median Center: **$22.00** (matches `X_train.median()`).
+- **Feature Column Order Preservation**: `True` (`[Time, V1, V2, ..., V28, Amount]`).
+- **Artifact Persistence**: Saved fitted preprocessor to `models/preprocessor.joblib` (ignored by git).
 
-#### 3. Files Created / Modified
-- `src/data_validation.py`: Schema validation, missing value checking, duplicate audit, and class distribution utilities.
-- `tests/test_data_validation.py`: 9 unit tests for schema, types, missing values, duplicates, and distributions.
-- `notebooks/01_eda.ipynb`: Fully executed exploratory analysis notebook with rendered visualizations.
-- `requirements.txt`: Pinned versions for `pandas`, `numpy`, `matplotlib`, `seaborn`, `ipykernel`, `nbconvert`, and dependencies.
-- `PROJECT_PROGRESS.md`: Authoritative progress tracking updated with verified statistics.
+#### 3. Technical Decisions & Rationale
+- **Why Preprocessing is Fitted on Training Data Only (Leakage Prevention)**:
+  Fitting a scaler on the entire dataset calculates global statistics (median, IQR, mean, std) that incorporate information from the test set into the training representations. This artificially inflates validation metrics and causes performance collapse in production when truly unseen transactions arrive.
+- **Why RobustScaler for Time and Amount**:
+  Phase 1 EDA revealed that transaction amount has extreme outliers (max $25,691 vs median $22) and high skewness. `StandardScaler` uses mean and standard deviation, which are heavily distorted by extreme values. `RobustScaler` uses the median and Interquartile Range (IQR = 75th - 25th percentile), ensuring scale robustness without clipping or discarding real transactions.
+- **Why Passthrough for V1–V28**:
+  Features `V1` through `V28` are outputs of PCA performed by the original data collectors, which means they are already centered around zero with comparable unit variances. Applying a second standardization would be redundant and could distort PCA coordinate relationships.
+- **Why Stratified 80/20 Partitioning**:
+  Because fraud represents only ~0.17% of the dataset, random unstratified splitting could result in test sets with significantly varying fraud rates, leading to unreliable performance estimates. Stratification guarantees that the test set evaluates models against the exact operational base rate.
 
-#### 4. Automated Tests Run & Results
-- Command: `.\.venv\Scripts\python.exe -m pytest tests/ -v`
-- Results: 13 passed, 0 failed in 1.81s (100% pass rate).
+#### 4. Files Created / Modified
+- `src/preprocessing.py`: Complete leakage-free preprocessing and splitting module.
+- `tests/test_preprocessing.py`: 9 unit tests for splitting, scaling, leakage protection, and persistence.
+- `requirements.txt`: Updated with `scikit-learn` and `joblib` dependencies.
+- `models/preprocessor.joblib`: Serialized preprocessor artifact (git-ignored).
+- `PROJECT_PROGRESS.md`: Phase 2 status updated to VERIFIED with real partition statistics.
 
-#### 5. Technical Decisions & Architectural Takeaways for Phase 2
-- **Why Accuracy Fails**: A trivial baseline predicting Class 0 achieves 99.83% accuracy but 0.0% recall, missing all $60,000+ of fraud. Optimization must prioritize **PR-AUC, Recall, and Precision**.
-- **Preprocessing Protocol**: `Amount` and `Time` have wide scales and heavy outliers, requiring robust scaling (`RobustScaler`), whereas PCA features `V1`–`V28` are already zero-centered.
-- **Leakage Prevention**: All transformations must be fit strictly on training splits. Stratified train/test splitting is required to prevent fold-to-fold class skew.
+#### 5. Commands Executed & Verified Outcomes
+- `.\.venv\Scripts\python.exe -m pip install scikit-learn`
+  - Output: Successfully installed scikit-learn 1.9.1, scipy 1.18.1, joblib 1.6.0 (Verified).
+- `.\.venv\Scripts\python.exe -m pytest tests/ -v`
+  - Output: 22 passed in 24.93s (Verified).
+- Execution script on real `data/creditcard.csv`:
+  - Output: Verified 227,845 train rows, 56,962 test rows, disjoint indices, exact 0.172% stratification, and leakage-free scaling (Verified).
 
-#### 6. Phase 1 Acceptance Checklist
-- [x] Verified Phase 0 completion and confirmed clean environment state.
-- [x] Dataset `data/creditcard.csv` validated (284,807 rows, 31 columns, 0 nulls).
-- [x] Actual dataset statistics calculated from execution without fabrication.
-- [x] Duplicate records audited and documented without mutating raw data.
-- [x] Defensive validation module implemented in `src/data_validation.py`.
-- [x] Unit test suite implemented in `tests/test_data_validation.py` (13/13 passed).
-- [x] `notebooks/01_eda.ipynb` executed end-to-end inplace with complete visualizations.
-- [x] Why accuracy is deceptive in fraud detection fully documented.
-- [x] Phase 1 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 2.
+#### 6. Automated Tests Run & Results
+- Total Tests: 22 (4 config + 9 data validation + 9 preprocessing)
+- `tests/test_config.py` (4 tests) -> **ALL PASSED**
+- `tests/test_data_validation.py` (9 tests) -> **ALL PASSED**
+- `tests/test_preprocessing.py` (9 tests) -> **ALL PASSED**:
+  - `test_prepare_features_and_target_success` -> **PASSED**
+  - `test_prepare_features_and_target_raises_on_invalid_target` -> **PASSED**
+  - `test_create_stratified_split_disjoint_indices` -> **PASSED**
+  - `test_create_stratified_split_preserves_stratification` -> **PASSED**
+  - `test_create_stratified_split_reproducibility` -> **PASSED**
+  - `test_get_split_summary` -> **PASSED**
+  - `test_scaling_preserves_canonical_columns_and_passthrough` -> **PASSED**
+  - `test_leakage_protection_verification` -> **PASSED**
+  - `test_preprocessor_serialization` -> **PASSED**
+- Result: **22 passed, 0 failed in 24.93s (100% pass rate)**.
+
+#### 7. Phase 2 Acceptance Checklist
+- [x] Verified Phase 1 completion and confirmed real dataset availability.
+- [x] Implemented schema-safe feature and target separation in `src/preprocessing.py`.
+- [x] Implemented reproducible stratified splitting with seed 42 and 80/20 ratio.
+- [x] Verified zero index overlap between train and test partitions (`disjoint_index_verified = True`).
+- [x] Verified class stratification preserved (train: 394 frauds / 0.1729%; test: 98 frauds / 0.1720%).
+- [x] Implemented `RobustScaler` for `Time` and `Amount` with passthrough for `V1`–`V28`.
+- [x] Verified fitted scaler parameters derived exclusively from `X_train` without leakage.
+- [x] Preserved canonical feature ordering and output dimensions across transformations.
+- [x] Serialized fitted preprocessor to `models/preprocessor.joblib`.
+- [x] Implemented 9 automated unit tests in `tests/test_preprocessing.py` (100% pass rate).
+- [x] Phase 2 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 3.

@@ -6,7 +6,7 @@ pluggy==1.7.0
 Pygments==2.21.0
 pytest==9.1.1
 
-# Phase 1: Data Validation & EDA Dependencies (Verified on Python 3.13)
+# Phase 1: Data Validation & EDA Dependencies (Phase 1 verified)
 asttokens==3.0.2
 attrs==26.1.0
 beautifulsoup4==4.15.0
@@ -64,7 +64,15 @@ tzdata==2026.5
 wcwidth==0.9.2
 webencodings==0.6.1
 
+# Phase 2: Preprocessing & Modeling Foundations (Verified on Python 3.13)
+cloudpickle==3.1.2
+joblib==1.6.0
+narwhals==2.27.1
+scikit-learn==1.9.1
+scipy==1.18.1
+threadpoolctl==3.7.0
+
 # Upcoming Phase Dependencies:
-# Phase 2-5: scikit-learn, imbalanced-learn, xgboost
-# Phase 6-7: streamlit, joblib
+# Phase 4-5: imbalanced-learn, xgboost
+# Phase 6-7: streamlit
 # Phase 8: shap

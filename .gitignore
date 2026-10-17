@@ -1,0 +1,41 @@
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python Bytecode and Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Datasets and Large Artifacts
+data/*
+!data/.gitkeep
+!data/README.md
+
+# Model Artifacts
+models/*
+!models/.gitkeep
+
+# Evaluation and Generated Reports
+reports/*
+!reports/.gitkeep
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Streamlit Local Configuration & Secrets
+.streamlit/secrets.toml
+
+# Environment Variables & Secrets
+.env
+.env.*
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

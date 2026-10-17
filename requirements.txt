@@ -1,0 +1,13 @@
+# Core Testing & Framework (Phase 0 verified)
+colorama==0.4.6
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.7.0
+Pygments==2.21.0
+pytest==9.1.1
+
+# Upcoming Phase Dependencies (Installed and pinned as each phase is executed):
+# Phase 1: pandas, numpy, matplotlib, seaborn, jupyter / ipykernel
+# Phase 2-5: scikit-learn, imbalanced-learn, xgboost
+# Phase 6-7: streamlit, joblib
+# Phase 8: shap

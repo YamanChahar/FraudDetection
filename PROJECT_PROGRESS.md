@@ -7,9 +7,9 @@ Authoritative single source of truth for project execution status, technical dec
 ## Executive Summary
 - **Project Name**: Fraud Detection & Risk Assessment System Using Machine Learning
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
-- **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
+- **Active Environment**: Windows (PowerShell), Python 3.13.1, Node v24.17.0, npm 11.13.0
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 8 Complete & Verified — Awaiting Approval for Phase 9
+- **Overall Status**: Full-Stack Architecture Migration — Subphase B Complete & Verified (Awaiting Approval for Subphase C)
 
 ---
 
@@ -227,15 +227,61 @@ Authoritative single source of truth for project execution status, technical dec
 
 #### 4. Phase 8 Acceptance Checklist
 - [x] Verified selected model artifact `models/best_model.joblib` exists and is compatible with `TreeExplainer`.
-- [x] Installed and pinned `shap==0.54.1` without breaking dependencies.
-- [x] Implemented `src/explainability.py` supporting global and local SHAP explanations.
-- [x] Verified explanation dimensions, feature ordering preservation, and mathematical efficiency identity.
-- [x] Generated and saved global summary plot and machine-readable feature importance report.
-- [x] Integrated dedicated Explainability tab and inline single-transaction attribution into Streamlit.
-- [x] Added non-causal interpretability and PCA anonymization governance notices.
-- [x] Implemented 8 automated unit tests in `tests/test_explainability.py` (64/64 total tests pass).
-- [x] Verified zero regressions across all previous phase test suites.
-- [x] Phase 8 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 9.
+---
+
+## Full-Stack Architecture Migration (Streamlit → React + FastAPI)
+
+### Subphase A — Repository Audit and Full-Stack Architecture Plan
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user approval received.
+- **Scope**: Comprehensive audit of trained models, pipelines, feature schemas, evaluation reports, and SHAP explainers. Designed decoupled FastAPI backend service and React + Vite + TypeScript frontend.
+
+### Subphase B — FastAPI Backend Service and Model Integration
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user approval received.
+
+#### 1. Key Technical Accomplishments
+- **Dedicated Backend Service**: Built clean FastAPI application in `backend/app/main.py` with modular routers and CORS middleware configured for Vite development (`http://localhost:5173`).
+- **Pydantic v2 Schema Validation**: Implemented strict request/response schemas in `backend/app/schemas.py` for health, model info, single prediction, multipart CSV batch scoring, global SHAP importance, local SHAP attribution, and transaction exploration.
+- **Direct Model & Explainer Reuse**: Safely integrated with existing `src/predict.py`, `src/risk_engine.py`, and `src/explainability.py` via singleton cached `ServiceContainer` (`backend/app/dependencies.py`).
+- **REST Endpoints Implemented**:
+  - `GET /api/health`: Health status, model readiness, and dataset connection.
+  - `GET /api/model-info`: Hyperparameters, feature schema, calibration notice, and banking disclaimer.
+  - `GET /api/metrics`: Verified Phase 5 evaluation benchmarks and confusion matrix.
+  - `POST /api/predict`: Validated single transaction scoring and policy classification.
+  - `POST /api/predict/batch`: High-throughput multipart CSV scoring with 5MB upload limit.
+  - `GET /api/sample-batch`: Downloadable 10-row sample CSV.
+  - `GET /api/explanations/global`: 30 ranked global features by mean absolute SHAP value.
+  - `GET /api/explanations/summary-plot`: Raw PNG stream of the global beeswarm plot.
+  - `POST /api/explanations/local`: Single instance SHAP attribution with top positive and negative risk drivers.
+  - `GET /api/transactions/explorer`: Filtered historical transactions enriched with live model predictions.
+
+#### 2. Artifacts Created & Modified
+- `backend/app/main.py`: FastAPI application entrypoint with CORS and exception handling.
+- `backend/app/schemas.py`: Pydantic validation models.
+- `backend/app/dependencies.py`: Singleton ML asset container.
+- `backend/app/routers/health.py`: Health check router.
+- `backend/app/routers/model.py`: Model info & metrics router.
+- `backend/app/routers/predict.py`: Single and batch prediction router.
+- `backend/app/routers/explanations.py`: SHAP explainability router.
+- `backend/app/routers/transactions.py`: Transaction explorer router.
+- `backend/tests/test_api.py`: 11 FastAPI integration tests with `TestClient`.
+- `requirements.txt`: Added `fastapi==0.143.3`, `pydantic==2.14.1`, `httpx==0.28.1`.
+- `PROJECT_PROGRESS.md`: Updated migration progress log.
+
+#### 3. Automated Tests Run & Results
+- Backend API Tests: 11 tests in `backend/tests/test_api.py` -> **ALL 11 PASSED**.
+- Total Project Tests: 75 tests (64 core ML & previous tests + 11 backend API tests) -> **ALL 75 PASSED (100% pass rate)**.
+- Zero regressions in existing models, risk scoring, or explainability logic.
+
+#### 4. Subphase B Acceptance Checklist
+- [x] Installed FastAPI and Pydantic in the isolated virtual environment.
+- [x] Built FastAPI service in `backend/app/` with modular routers.
+- [x] Reused existing champion model, risk engine, and SHAP explainer without duplicate logic.
+- [x] Implemented Pydantic validation on all incoming features and parameters.
+- [x] Configured CORS middleware for local frontend development.
+- [x] Implemented 11 automated integration tests in `backend/tests/test_api.py`.
+- [x] Verified all 75 automated tests pass cleanly across the repository.
+- [x] Subphase B status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Subphase C (React + Vite + TypeScript Shell).
+
 
 

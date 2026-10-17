@@ -104,3 +104,9 @@ websockets==17.2
 shap==0.54.1
 slicer==0.0.8
 tqdm>=4.27.0
+
+# Full-Stack Backend (FastAPI Migration)
+fastapi==0.143.3
+pydantic==2.14.1
+httpx==0.28.1
+

@@ -79,34 +79,26 @@ sklearn-compat==0.1.6
 # Phase 5: Model Comparison & Selection (Phase 5 verified)
 xgboost==3.4.1
 
-# Phase 7: Interactive Dashboard (Verified on Python 3.13)
-altair==6.3.0
-anyio==4.15.1
-certifi==2026.7.22
-charset-normalizer==3.5.2
-click==8.5.0
-h11==0.16.0
-idna==3.20
-itsdangerous==2.2.0
-protobuf==7.36.2
-pyarrow==26.0.0
-pydeck==0.9.3
-python-multipart==0.0.32
-requests==2.34.2
-starlette==1.8.0
-streamlit==1.66.0
-urllib3==2.8.0
-uvicorn==0.54.0
-watchdog==6.0.0
-websockets==17.2
-
 # Phase 8: Model Explainability with SHAP (Phase 8 verified)
 shap==0.54.1
 slicer==0.0.8
 tqdm>=4.27.0
 
-# Full-Stack Backend (FastAPI Migration)
+# Full-Stack FastAPI Backend Service
+anyio==4.15.1
+certifi==2026.7.22
+charset-normalizer==3.5.2
+click==8.5.0
 fastapi==0.143.3
-pydantic==2.14.1
+h11==0.16.0
 httpx==0.28.1
+idna==3.20
+itsdangerous==2.2.0
+pydantic==2.14.1
+python-multipart==0.0.32
+requests==2.34.2
+starlette==1.8.0
+urllib3==2.8.0
+uvicorn==0.54.0
+websockets==17.2
 

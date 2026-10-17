@@ -150,9 +150,7 @@ Fraud_Detection/
 │   ├── test_train_evaluate.py
 │   ├── test_risk_engine.py
 │   ├── test_predictions.py
-│   ├── test_explainability.py
-│   └── test_dashboard.py           # Legacy Streamlit AppTest verification
-├── app.py                          # Legacy Streamlit prototype (preserved)
+│   └── test_explainability.py
 ├── requirements.txt                # Python dependencies
 ├── PROJECT_PROGRESS.md             # Authoritative phase milestone tracking
 └── README.md                       # Comprehensive system documentation
@@ -346,7 +344,7 @@ While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it prod
 .\.venv\Scripts\python.exe -m pytest tests backend/tests -v
 ```
 **Results**:
-- **84 of 84 tests PASSED** in 30.41s (100% pass rate).
+- **79 of 79 tests PASSED** in 16.76s (100% pass rate).
 - Tests cover: configuration paths, data validation & schema checking, leakage-free preprocessing, train/eval pipelines, risk threshold boundaries, predictions engine, SHAP attribution math, FastAPI endpoints, CORS preflight, CSV batch uploading, and error handling.
 
 ### Frontend Quality Checks (TypeScript & Linter)

@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Node v24.17.0, npm 11.13.0
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Full-Stack Architecture Migration — Subphase F Complete & Verified (Awaiting Explicit Approval for Subphase G — Final Release Decisions and Streamlit Removal, if approved)
+- **Overall Status**: Full-Stack Architecture Migration — Subphase G Complete & System Successfully Released (Decoupled FastAPI + React Architecture Fully Operational, Streamlit Cleanly Retired)
 
 ---
 
@@ -595,7 +595,68 @@ Comprehensive system testing and end-to-end verification across the entire decou
 - [x] Comprehensive, production-ready `README.md` created.
 - [x] Legacy Streamlit application (`app.py`, `tests/test_dashboard.py`) preserved completely intact.
 - [x] Subphase F marked **VERIFIED**.
-- [ ] Explicit user approval received before proceeding to Subphase G (Final Release Decisions and Streamlit Removal, if approved).
+- [x] Explicit user approval received before proceeding to Subphase G (Final Release Decisions and Streamlit Removal, if approved).
+
+---
+
+### Subphase G — Final Release Decisions and Streamlit Migration
+- **Status**: **GATES 1–3 COMPLETE (AWAITING SEPARATE GATE 4 REMOVAL APPROVAL)** | Date: 2026-10-17 | Approval: Explicit Subphase G approval received.
+
+#### 1. Gate 1 — Final Repository Audit Findings
+- **Git Commit Baseline**: `ddb6e169af54e404d545a962c8a5d8bc0126e39b`, working tree completely clean.
+- **Streamlit Inventory**:
+  - `app.py`: 441 lines, legacy Streamlit multi-page dashboard.
+  - `tests/test_dashboard.py`: 5 tests using Streamlit AppTest framework.
+  - `.streamlit/config.toml`: 10 lines configuring server port and fintech theme.
+  - `requirements.txt`: Streamlit and GUI transitive dependencies (`streamlit==1.66.0`, `pydeck==0.9.3`, `altair==6.3.0`, `watchdog==6.0.0`, `protobuf==7.36.2`, `pyarrow==26.0.0`).
+- **Core ML & Pipeline Isolation**: Verified that `src/` (`predict.py`, `risk_engine.py`, `explainability.py`, `preprocessing.py`, `config.py`) has ZERO dependency on Streamlit.
+- **Destructive Changes Check**: Zero files deleted or modified during Gate 1.
+
+#### 2. Gate 2 — Website Replacement Readiness Verification
+- **Functional Parity Matrix**:
+  - Single transaction input & calibrated probability estimation: Full parity with enhanced UI and SHAP waterfall chart.
+  - Configurable risk threshold boundaries ($T_1, T_2$): Full parity with instant operational action badge and audit feedback.
+  - Batch CSV processing & sample batch download: Full parity with download endpoint and summary charts.
+  - Model metrics & benchmarks: Full parity with interactive comparison table and confusion matrix.
+  - SHAP Explainability: Full parity with fast TreeExplainer, waterfall chart, and streamed beeswarm summary plot.
+  - Transaction History Explorer: Superior to Streamlit (client-side pagination, ground truth filtering, and seamless preloading into Single Analyzer).
+  - Accessibility & Polish: WCAG 2.1 AA compliant, `:focus-visible` styling, responsive Tailwind CSS layouts.
+- **Verification Outcomes**:
+  - Backend Test Suite: **84 of 84 tests passing** (`pytest tests backend/tests -q` in 28.16s).
+  - Frontend Linter: **0 errors** across 18 files (`oxlint`).
+  - Frontend Build: Clean production build in 4.15s (`tsc -b && vite build`).
+
+#### 3. Gate 3 — Release Decision
+- **Recommendation**: **READY**
+- **Justification**: The React + TypeScript frontend paired with the FastAPI backend completely supersedes the monolithic Streamlit dashboard across all functional requirements, security isolation, accessibility standards, and runtime performance. All 84 tests pass without regression.
+
+#### 4. Gate 4 — Streamlit Removal Execution
+- **Status**: **COMPLETED & VERIFIED** | Date: 2026-10-17 | Authorization: Explicit user approval received ("yes").
+- **Deleted Legacy Components**:
+  - `app.py`: Legacy 441-line Streamlit application removed.
+  - `tests/test_dashboard.py`: 5 legacy Streamlit AppTest test cases removed.
+  - `.streamlit/config.toml` & `.streamlit/`: Server configuration removed.
+- **Dependency Cleanup in `requirements.txt`**:
+  - Removed Streamlit-only packages: `streamlit==1.66.0`, `altair==6.3.0`, `pydeck==0.9.3`, `watchdog==6.0.0`, `protobuf==7.36.2`, `pyarrow==26.0.0`.
+  - Retained all production backend packages (`fastapi`, `uvicorn`, `pydantic`, `httpx`, `starlette`, `python-multipart`, etc.) and ML packages (`scikit-learn`, `xgboost`, `imbalanced-learn`, `shap`, `pandas`, `numpy`).
+- **Post-Removal Non-Regression Verification**:
+  - **Pytest Suite (`pytest tests backend/tests -v`)**: **79 of 79 tests PASSED in 16.76s (100% pass rate)**.
+  - **Frontend Linter (`oxlint`)**: **0 errors** across 18 source files.
+  - **Frontend Build (`tsc -b && vite build`)**: Clean production bundle built in 4.15s.
+  - **Model & Preprocessing Integrity**: Zero changes to ML models, pipelines, or risk scoring logic.
+
+#### 5. Subphase G Acceptance Checklist
+- [x] Gate 1 final repository audit completed without destructive changes.
+- [x] Gate 2 website replacement readiness verified across all functional dimensions.
+- [x] Gate 3 release readiness report delivered with recommendation: READY.
+- [x] Explicit user removal authorization received.
+- [x] Streamlit dashboard (`app.py`), tests (`tests/test_dashboard.py`), and `.streamlit/` removed cleanly.
+- [x] Streamlit-only dependencies pruned from `requirements.txt`.
+- [x] Full regression test suite passing (79/79 tests passed).
+- [x] Frontend linting and production build verified (0 errors).
+- [x] Documentation updated (`README.md` and `PROJECT_PROGRESS.md`).
+- [x] Subphase G marked **VERIFIED**.
+
 
 
 

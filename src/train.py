@@ -14,8 +14,10 @@ import joblib
 import pandas as pd
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as ImbPipeline
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from xgboost import XGBClassifier
 
 from src import config
 from src.preprocessing import build_preprocessor
@@ -115,6 +117,87 @@ def build_smote_logistic_regression_pipeline(
         ]
     )
     return pipeline
+
+
+def build_random_forest_pipeline(
+    scaler_type: Literal["robust", "standard"] = "robust",
+    n_estimators: int = 100,
+    max_depth: Optional[int] = 12,
+    min_samples_leaf: int = 2,
+    class_weight: Optional[Union[str, Dict[Any, float]]] = "balanced",
+    random_state: int = config.RANDOM_STATE,
+    n_jobs: int = -1,
+) -> Pipeline:
+    """Construct an end-to-end Pipeline with RobustScaler and RandomForestClassifier.
+
+    Args:
+        scaler_type: Preprocessing scaler ('robust' or 'standard').
+        n_estimators: Number of decision trees.
+        max_depth: Maximum tree depth to constrain overfitting on rare fraud patterns.
+        min_samples_leaf: Minimum samples required at leaf node.
+        class_weight: Balanced sample weighting for minority fraud.
+        random_state: Reproducibility random seed.
+        n_jobs: Thread concurrency budget (-1 for all cores).
+
+    Returns:
+        Pipeline: Unfitted Random Forest Pipeline.
+    """
+    preprocessor = build_preprocessor(scaler_type=scaler_type)
+    classifier = RandomForestClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_leaf=min_samples_leaf,
+        class_weight=class_weight,
+        random_state=random_state,
+        n_jobs=n_jobs,
+    )
+    return Pipeline(
+        steps=[
+            ("preprocessor", preprocessor),
+            ("classifier", classifier),
+        ]
+    )
+
+
+def build_xgboost_pipeline(
+    scaler_type: Literal["robust", "standard"] = "robust",
+    n_estimators: int = 100,
+    max_depth: int = 5,
+    learning_rate: float = 0.1,
+    scale_pos_weight: float = 1.0,
+    random_state: int = config.RANDOM_STATE,
+    n_jobs: int = -1,
+) -> Pipeline:
+    """Construct an end-to-end Pipeline with RobustScaler and XGBoost Classifier.
+
+    Args:
+        scaler_type: Preprocessing scaler ('robust' or 'standard').
+        n_estimators: Number of gradient boosted boosting rounds.
+        max_depth: Maximum tree depth for weak learners.
+        learning_rate: Shrinkage step size (eta).
+        scale_pos_weight: Balancing of positive and negative weights.
+        random_state: Reproducibility random seed.
+        n_jobs: Thread concurrency budget.
+
+    Returns:
+        Pipeline: Unfitted XGBoost Pipeline.
+    """
+    preprocessor = build_preprocessor(scaler_type=scaler_type)
+    classifier = XGBClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+        scale_pos_weight=scale_pos_weight,
+        random_state=random_state,
+        eval_metric="logloss",
+        n_jobs=n_jobs,
+    )
+    return Pipeline(
+        steps=[
+            ("preprocessor", preprocessor),
+            ("classifier", classifier),
+        ]
+    )
 
 
 def train_baseline_logistic_regression(

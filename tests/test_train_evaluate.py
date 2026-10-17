@@ -204,3 +204,41 @@ def test_unweighted_logistic_regression_pipeline():
     unweighted_pipeline.fit(X, y)
     preds = unweighted_pipeline.predict(X)
     assert len(preds) == 100
+
+
+def test_build_and_train_random_forest_pipeline():
+    """Verify that build_random_forest_pipeline trains and produces valid probabilities."""
+    from src.train import build_random_forest_pipeline
+
+    df = _make_dummy_dataset(100, fraud_count=10)
+    X, y = prepare_features_and_target(df)
+
+    rf_pipeline = build_random_forest_pipeline(n_estimators=10, max_depth=4, random_state=42)
+    rf_pipeline.fit(X, y)
+
+    preds = rf_pipeline.predict(X)
+    probs = rf_pipeline.predict_proba(X)
+
+    assert len(preds) == 100
+    assert set(preds).issubset({0, 1})
+    assert probs.shape == (100, 2)
+    assert np.all(probs >= 0.0) and np.all(probs <= 1.0)
+
+
+def test_build_and_train_xgboost_pipeline():
+    """Verify that build_xgboost_pipeline trains and produces valid probabilities."""
+    from src.train import build_xgboost_pipeline
+
+    df = _make_dummy_dataset(100, fraud_count=10)
+    X, y = prepare_features_and_target(df)
+
+    xgb_pipeline = build_xgboost_pipeline(n_estimators=10, max_depth=3, random_state=42)
+    xgb_pipeline.fit(X, y)
+
+    preds = xgb_pipeline.predict(X)
+    probs = xgb_pipeline.predict_proba(X)
+
+    assert len(preds) == 100
+    assert set(preds).issubset({0, 1})
+    assert probs.shape == (100, 2)
+    assert np.all(probs >= 0.0) and np.all(probs <= 1.0)

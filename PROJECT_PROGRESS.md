@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 4 Complete & Verified — Awaiting Approval for Phase 5
+- **Overall Status**: Phase 5 Complete & Verified — Awaiting Approval for Phase 6
 
 ---
 
@@ -21,8 +21,8 @@ Authoritative single source of truth for project execution status, technical dec
 | **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Yes (Approved) |
 | **Phase 2** | Preprocessing and Experimental Design | **VERIFIED** | Yes (Approved) |
 | **Phase 3** | Logistic Regression Baseline | **VERIFIED** | Yes (Approved) |
-| **Phase 4** | Imbalance Handling Experiments | **VERIFIED** | Awaiting Approval to proceed to Phase 5 |
-| **Phase 5** | Model Comparison and Selection | NOT STARTED | Pending |
+| **Phase 4** | Imbalance Handling Experiments | **VERIFIED** | Yes (Approved) |
+| **Phase 5** | Model Comparison and Selection | **VERIFIED** | Awaiting Approval to proceed to Phase 6 |
 | **Phase 6** | Risk Scoring and Prediction Interface | NOT STARTED | Pending |
 | **Phase 7** | Streamlit Dashboard | NOT STARTED | Pending |
 | **Phase 8** | Explainability (SHAP) | NOT STARTED | Pending |
@@ -49,77 +49,82 @@ Authoritative single source of truth for project execution status, technical dec
 - **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
 - Baseline Balanced Logistic Regression: PR-AUC = 0.7175, Recall = 0.9184 (90/98 frauds caught), Precision = 0.0609, F1 = 0.1142, ROC-AUC = 0.9720.
 
+### Phase 4 — Class Imbalance Handling Experiments
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
+- Evaluated Unweighted (PR-AUC 0.7388, Recall 0.6429), Class-Weighted (PR-AUC 0.7175, Recall 0.9184), and SMOTE (PR-AUC 0.7251, Recall 0.9184). Proved SMOTE does not outperform class weighting on this dataset.
+
 ---
 
-### Phase 4 — Class Imbalance Handling Experiments
+### Phase 5 — Model Comparison and Selection
 - **Status**: **VERIFIED**
 - **Date Completed**: 2026-10-17
 
 #### 1. Tasks Completed
-- Installed `imbalanced-learn==0.14.2` and `sklearn-compat==0.1.6` in `.venv`; updated `requirements.txt`.
-- Implemented `build_smote_logistic_regression_pipeline()` in `src/train.py` using `imblearn.pipeline.Pipeline`:
-  - `RobustScaler` preprocessing on training folds.
-  - `SMOTE` oversampling applied strictly on training folds.
-  - Unweighted classifier fitted on resampled training data.
-  - `SMOTE` automatically skipped during inference on validation/test folds to guarantee zero data leakage.
-- Executed Stratified 5-Fold Cross-Validation on $X_{\text{train}}$ only across all three strategies:
-  1. Logistic Regression (Unweighted: `class_weight=None`)
-  2. Logistic Regression (Class-Weighted: `class_weight='balanced'`)
-  3. Logistic Regression with SMOTE (inside `imblearn.pipeline.Pipeline`)
-- Evaluated all three strategies on the isolated held-out test set (56,962 samples).
-- Generated machine-readable and human-readable comparative reports:
-  - `reports/imbalance_experiments.json`
-  - `reports/imbalance_experiments.md`
-- Implemented unit tests in `tests/test_train_evaluate.py` for SMOTE pipeline execution and unweighted pipeline options (32/32 tests pass).
+- Installed `xgboost==3.4.1` in `.venv`; updated `requirements.txt`.
+- Implemented `build_random_forest_pipeline()` and `build_xgboost_pipeline()` in `src/train.py`:
+  - Coupled `RobustScaler` preprocessing inside `Pipeline` to prevent leakage.
+  - Random Forest configured with 100 trees, `max_depth=12`, `min_samples_leaf=2`, `class_weight='balanced'`.
+  - XGBoost configured with 100 trees, `max_depth=5`, `learning_rate=0.1`, `scale_pos_weight=1.0`.
+- Implemented automated unit tests in `tests/test_train_evaluate.py` for Random Forest and XGBoost (34/34 tests pass).
+- Executed Stratified 5-Fold Cross-Validation on $X_{\text{train}}$ only across all three models to measure cross-validation performance.
+- Trained all three models on full $X_{\text{train}}$ (227,845 records) and evaluated on the isolated held-out test set (56,962 records).
+- Generated Precision-Recall curve comparison visualization saved to `reports/precision_recall_curves.png`.
+- Saved machine-readable comparison report to `reports/model_comparison.json`.
+- Saved human-readable summary report to `reports/model_comparison.md`.
+- Persisted serialized model artifacts in `models/` (`logistic_regression.joblib`, `random_forest.joblib`, `xgboost.joblib`, and `best_model.joblib`).
 
-#### 2. Actual Verified Comparative Results (Held-Out Test Set: 56,962 Samples)
+#### 2. Actual Verified Comparative Results (Held-Out Test Set: 56,962 Transactions)
 
-| Metric | 1. Unweighted Baseline | 2. Class-Weighted ('balanced') | 3. SMOTE Pipeline |
+| Metric | 1. Logistic Regression | 2. Random Forest (Winner) | 3. XGBoost |
 |---|---|---|---|
-| **Average Precision (PR-AUC)** | **0.7388** | **0.7175** | **0.7251** |
-| **Recall (Sensitivity)** | **0.6429** (63/98) | **0.9184** (90/98) | **0.9184** (90/98) |
-| **Precision** | **0.8289** | **0.0609** | **0.0589** |
-| **F1-Score** | **0.7241** | **0.1142** | **0.1106** |
-| **ROC-AUC** | **0.9572** | **0.9720** | **0.9712** |
-| **Raw Accuracy** | **0.9992** | **0.9755** | **0.9746** |
-| **True Positives (TP)** | 63 | 90 | 90 |
-| **False Positives (FP)** | 13 | 1,388 | 1,439 |
-| **False Negatives (FN)** | 35 | 8 | 8 |
-| **True Negatives (TN)** | 56,851 | 55,476 | 55,425 |
-| **Training Time** | 1.23s | 2.42s | 4.08s |
+| **Average Precision (PR-AUC)** | **0.7175** | **`0.8462`** | **0.8253** |
+| **Recall (Sensitivity)** | **0.9184** (90/98) | **`0.8469`** (83/98) | **0.7755** (76/98) |
+| **Precision** | **0.0609** | **`0.7217`** | **0.9048** |
+| **F1-Score** | **0.1142** | **`0.7793`** | **0.8352** |
+| **ROC-AUC** | **0.9720** | **`0.9735`** | **0.9612** |
+| **Raw Accuracy** | **0.9755** | **0.9992** | **0.9995** |
+| **True Positives (TP)** | 90 | **83** | 76 |
+| **False Positives (FP)** | 1,388 | **32** | 8 |
+| **False Negatives (FN)** | 8 | **15** | 22 |
+| **True Negatives (TN)** | 55,476 | **56,832** | 56,856 |
+| **Training Time** | 2.34s | 20.76s | 5.11s |
 
 #### 3. Cross-Validation Results (5-Fold Stratified on $X_{\text{train}}$)
-- **Unweighted**: CV PR-AUC = 0.7622 (± 0.0425) | CV Recall = 0.6421 (± 0.0293) | CV Precision = 0.8835 (± 0.0287)
-- **Class-Weighted**: CV PR-AUC = 0.7477 (± 0.0500) | CV Recall = 0.9138 (± 0.0230) | CV Precision = 0.0630 (± 0.0037)
-- **SMOTE Pipeline**: CV PR-AUC = 0.7464 (± 0.0448) | CV Recall = 0.9188 (± 0.0188) | CV Precision = 0.0600 (± 0.0038)
+- **Logistic Regression**: CV Mean PR-AUC = `0.7477` (± 0.0500) | CV Recall = `0.9138` (± 0.0230) | CV Precision = `0.0630` (± 0.0037)
+- **Random Forest**: CV Mean PR-AUC = `0.8335` (± 0.0234) | CV Recall = `0.7970` (± 0.0479) | CV Precision = `0.8239` (± 0.0545)
+- **XGBoost**: CV Mean PR-AUC = `0.8251` (± 0.0166) | CV Recall = `0.7362` (± 0.0504) | CV Precision = `0.9395` (± 0.0414)
 
-#### 4. Analytical Findings & Operational Trade-offs
-- **Fraud Capture vs. False Alarms**:
-  - The Unweighted model achieves high precision (82.9%) by severely minimizing false positives (13 FP), but at the unacceptable cost of **missing 35 out of 98 frauds (35.7% missed fraud rate)**.
-  - Class-Weighted and SMOTE both prioritize catching fraud, achieving **91.84% recall (catching 90 of 98 frauds)**, but generating ~1,400 false positives due to the linear decision boundary operating in an extreme 578:1 imbalance space.
-- **Does SMOTE Outperform Class Weighting?**:
-  - **No**. SMOTE achieves virtually identical recall (91.84% vs 91.84%) and slightly lower precision (5.89% vs 6.09%, with 1,439 FP vs 1,388 FP) compared to class weighting, while taking **~1.7x longer** to train (4.08s vs 2.42s).
-  - In linear models on PCA-anonymized features, synthetic linear interpolation between minority points does not uncover non-linear decision regions; class weighting achieves equivalent loss penalization without synthetic sampling artifacts.
-- **Architectural Implication for Phase 5**:
-  - Linear models on this dataset have an empirical PR-AUC ceiling around ~0.72–0.74. In Phase 5, we will evaluate non-linear tree ensembles (**Random Forest** and **XGBoost**) which can carve out localized high-risk decision regions to simultaneously achieve high recall and dramatically lower false alarm rates.
+#### 4. Model Selection Decision & Technical Rationale
+- **Selected Champion: Random Forest (Balanced)**:
+  1. **Dominant PR-AUC**: Achieved the highest Average Precision (**0.8462** on test, **0.8335** on CV), proving superior ranking of fraudulent transactions across all operational thresholds.
+  2. **Massive False Alarm Reduction**: Slashed false positive alerts from 1,388 (Logistic Regression) down to **32 false positives** across 56,864 transactions (a **97.7% reduction in false alarms**), elevating precision from 6.09% to **72.17%**.
+  3. **High Fraud Catch Rate**: Retains strong fraud detection (**84.69% recall**, capturing 83 out of 98 frauds). In comparison, XGBoost missed 22 frauds (77.55% recall).
+  4. **Operational Viability**: 72.2% precision means nearly 3 out of 4 flagged transactions are confirmed fraud, drastically reducing customer friction and compliance alert fatigue.
+- **Artifact**: Saved as `models/best_model.joblib`.
 
 #### 5. Files Created / Modified
-- `src/train.py`: Added `build_smote_logistic_regression_pipeline()` and unweighted options.
-- `tests/test_train_evaluate.py`: Added tests for SMOTE pipeline execution and unweighted pipeline options (32/32 tests pass).
-- `requirements.txt`: Pinned `imbalanced-learn==0.14.2` and `sklearn-compat==0.1.6`.
-- `reports/imbalance_experiments.json`: Machine-readable comparison results.
-- `reports/imbalance_experiments.md`: Comprehensive Markdown comparison matrix.
-- `PROJECT_PROGRESS.md`: Phase 4 marked VERIFIED with actual metrics.
+- `src/train.py`: Added `build_random_forest_pipeline()` and `build_xgboost_pipeline()`.
+- `tests/test_train_evaluate.py`: Added Random Forest and XGBoost unit tests (34/34 tests pass).
+- `requirements.txt`: Pinned `xgboost==3.4.1`.
+- `reports/model_comparison.json`: Machine-readable multi-model evaluation report.
+- `reports/model_comparison.md`: Detailed comparison matrix and selection rationale.
+- `reports/precision_recall_curves.png`: High-resolution Precision-Recall curve chart.
+- `models/random_forest.joblib`: Serialized Random Forest pipeline.
+- `models/xgboost.joblib`: Serialized XGBoost pipeline.
+- `models/best_model.joblib`: Serialized selected champion model.
+- `PROJECT_PROGRESS.md`: Phase 5 marked VERIFIED with all metrics.
 
-#### 6. Phase 4 Acceptance Checklist
-- [x] Verified Phase 3 baseline completion and confirmed clean environment state.
-- [x] Implemented SMOTE pipeline inside `imblearn.pipeline.Pipeline` with zero test leakage.
-- [x] Executed 5-fold Stratified Cross-Validation on $X_{\text{train}}$ across all three strategies.
-- [x] Evaluated Unweighted, Class-Weighted, and SMOTE on held-out test set ($X_{\text{test}}$, $y_{\text{test}}$).
+#### 6. Phase 5 Acceptance Checklist
+- [x] Verified Phase 4 completion and confirmed clean environment state.
+- [x] Implemented Random Forest and XGBoost pipelines in `src/train.py`.
+- [x] Executed 5-fold Stratified Cross-Validation on $X_{\text{train}}$ for all 3 models.
+- [x] Evaluated all 3 models on isolated held-out test set ($X_{\text{test}}$, $y_{\text{test}}$).
 - [x] Compared Precision, Recall, F1, PR-AUC, ROC-AUC, confusion matrices, and training times.
-- [x] Saved machine-readable report to `reports/imbalance_experiments.json`.
-- [x] Saved formatted comparison report to `reports/imbalance_experiments.md`.
-- [x] Unit test suite updated and passing (32/32 tests pass).
-- [x] Documented operational trade-offs and rationale for Phase 5 model comparison.
-- [x] Phase 4 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 5.
+- [x] Generated and saved Precision-Recall curves to `reports/precision_recall_curves.png`.
+- [x] Documented model selection criteria and justified Random Forest as champion.
+- [x] Persisted best model to `models/best_model.joblib`.
+- [x] Saved machine-readable report to `reports/model_comparison.json`.
+- [x] Saved formatted summary report to `reports/model_comparison.md`.
+- [x] Automated test suite passing (34/34 tests pass).
+- [x] Phase 5 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 6.

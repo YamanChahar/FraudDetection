@@ -72,11 +72,13 @@ scikit-learn==1.9.1
 scipy==1.18.1
 threadpoolctl==3.7.0
 
-# Phase 4: Imbalance Handling (Verified on Python 3.13)
+# Phase 4: Imbalance Handling (Phase 4 verified)
 imbalanced-learn==0.14.2
 sklearn-compat==0.1.6
 
+# Phase 5: Model Comparison & Selection (Verified on Python 3.13)
+xgboost==3.4.1
+
 # Upcoming Phase Dependencies:
-# Phase 5: xgboost
 # Phase 6-7: streamlit
 # Phase 8: shap

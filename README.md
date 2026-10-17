@@ -1,154 +1,383 @@
 # Fraud Detection & Risk Assessment System Using Machine Learning
 
-A production-grade, portfolio-ready Machine Learning system for real-time transaction fraud probability estimation and configurable risk assessment on highly imbalanced financial data.
+A production-grade, full-stack Machine Learning system for real-time credit card fraud probability estimation, explainable AI risk scoring, and high-throughput batch evaluation on severely imbalanced transaction streams.
 
 ---
 
-## 1. Project Overview & Motivation
-Financial fraud is a critical challenge where fraudulent transactions represent a minute fraction of overall activity (< 0.2%). Standard classification algorithms optimizing for raw accuracy fail catastrophically in this scenario by classifying all transactions as legitimate, achieving 99.8% accuracy while missing 100% of fraud.
+## 1. Executive Summary & Core Capabilities
 
-This system demonstrates:
-- **Strict Data Leakage Prevention**: Pipeline-isolated transformations, stratified train/test partitioning, and training-fold-only resampling.
-- **Imbalanced Learning Protocols**: Precision-Recall AUC (PR-AUC) optimization, cost-sensitive class weighting, and SMOTE evaluation.
-- **Configurable Risk Scoring**: Transforming raw model probabilities into business-interpretable 0–100 risk scores with configurable decision boundaries.
-- **Interactive Fintech Dashboard**: Multi-page Streamlit application supporting single transaction scoring, batch CSV processing, and model performance metrics.
-- **Software Engineering Standards**: Automated unit tests (`pytest`), strict schema validation, type hinting, and modular architecture.
+Financial credit card fraud constitutes a severe class-imbalance problem: fraudulent transactions account for fewer than 0.18% of all operations. Naive machine learning models optimizing for standard accuracy fail catastrophically by classifying every transaction as legitimate (achieving 99.82% accuracy while detecting 0% of fraud).
+
+This system addresses the challenge through a production-grade decoupled architecture:
+- **FastAPI Async Backend Service**: High-concurrency inference engine providing single-transaction prediction, high-throughput CSV batch evaluation, SHAP explainability endpoints, and transaction exploration APIs.
+- **Modern React + TypeScript Frontend (FraudLens)**: Institutional-grade fintech dashboard built with Vite, Tailwind CSS, Lucide icons, and Recharts, offering real-time risk gauges, interactive SHAP waterfall attributions, custom threshold tuning, and accessible WCAG 2.1 AA UI components.
+- **Machine Learning Core**: Leakage-free preprocessing (`RobustScaler`), class-imbalance mitigation, calibrated probability estimation, and a 3-tier risk policy engine mapping raw model probabilities to business action tiers (Approved, Step-Up Verification, Decline).
+- **Explainable AI (SHAP)**: Fast TreeExplainer local feature attributions and global beeswarm importance visualizations explaining exact risk drivers.
 
 ---
 
-## 2. Architecture & Directory Layout
+## 2. System Architecture & Data Flow
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client Layer (Browser)"]
+        UI["React 19 + TypeScript (FraudLens)"]
+        RT["React Router (6 Routes)"]
+        RC["Recharts Visualizations"]
+    end
+
+    subgraph Gateway ["API Service Layer (FastAPI / Uvicorn :8000)"]
+        CORS["CORS Middleware (Allow Origin 5173)"]
+        Val["Pydantic Request Validation"]
+        API_Single["POST /api/predict"]
+        API_Batch["POST /api/predict/batch"]
+        API_LocalSHAP["POST /api/explanations/local"]
+        API_GlobalSHAP["GET /api/explanations/global"]
+        API_Plot["GET /api/explanations/summary-plot"]
+        API_Metrics["GET /api/metrics"]
+        API_Explorer["GET /api/transactions/explorer"]
+    end
+
+    subgraph ML ["Machine Learning Pipeline & Engine"]
+        PP["RobustScaler (Time & Amount)"]
+        Model["Trained Champion Model (Random Forest / XGBoost)"]
+        Risk["Risk Scoring Engine (T1=0.30, T2=0.70)"]
+        SHAP["SHAP TreeExplainer"]
+    end
+
+    subgraph Data ["Data & Artifact Storage"]
+        Art["models/best_model.joblib"]
+        Rep["reports/comparison_report.json"]
+        CSV["data/creditcard.csv"]
+    end
+
+    UI -->|HTTP / JSON| Gateway
+    Gateway --> Val
+    Val --> ML
+    ML --> Art
+    ML --> Rep
+    API_Explorer --> CSV
+```
+
+### Data Flow Lifecycle:
+1. **Request Ingestion**: Client submits transaction features (`Time`, `Amount`, `V1`–`V28`) to `/api/predict`.
+2. **Schema Validation**: Pydantic validates data types, non-null constraints, and finite numerical values.
+3. **Pipeline Transformation**: `RobustScaler` scales `Time` and `Amount` using pre-fitted median and IQR parameters; PCA features (`V1`–`V28`) pass through without leakage.
+4. **Model Inference**: Serialized champion pipeline outputs calibrated fraud probability $P(\text{Fraud})$.
+5. **Risk Assessment**: `RiskEngine` computes a $0\text{--}100$ score and categorizes into Low ($<0.30$), Medium ($0.30\le P < 0.70$), or High Risk ($\ge 0.70$).
+6. **Local Explainability**: `SHAP TreeExplainer` computes exact local feature contributions ($\phi_i$) indicating why the transaction was flagged.
+7. **Telemetry & Response**: JSON payload returned to React UI for rendering in telemetry meters and waterfall charts.
+
+---
+
+## 3. Technology Stack
+
+### Backend & Machine Learning
+- **Python**: 3.13.1
+- **API Framework**: FastAPI 0.135+, Uvicorn 0.43+
+- **Data & ML**: Scikit-Learn 1.8+, XGBoost 3.2+, Imbalanced-Learn 0.14+, Pandas 2.3+, NumPy 2.4+
+- **Explainability**: SHAP 0.51+, Matplotlib 3.10+ (Agg backend)
+- **Serialization**: Joblib 1.5+
+- **Validation**: Pydantic v2
+- **Testing**: Pytest 9.1+, Starlette TestClient, AnyIO
+
+### Frontend & Dashboard
+- **Runtime & Tooling**: Node.js v24+, Vite 8.3+, TypeScript 5.9+
+- **UI Library**: React 19, React Router DOM 7.5+
+- **Styling**: Tailwind CSS v4, Lucide React icons
+- **Charts**: Recharts 2.15+
+- **Linting**: Oxlint
+
+---
+
+## 4. Repository Structure
 
 ```
 Fraud_Detection/
-├── .streamlit/
-│   └── config.toml             # Streamlit server & fintech dark theme settings
+├── backend/                        # Production FastAPI Service
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                 # FastAPI application & route declarations
+│   │   └── schemas.py              # Pydantic request/response schemas
+│   └── tests/
+│       ├── test_api.py             # 20 automated integration & contract tests
+│       └── __init__.py
+├── frontend/                       # Institutional React + TypeScript Website
+│   ├── src/
+│   │   ├── components/             # Reusable UI components (Navbar, Footer, etc.)
+│   │   ├── pages/                  # 6 Core Application Routes + 404
+│   │   │   ├── Overview.tsx        # System KPIs, status, and benchmark charts
+│   │   │   ├── Analyze.tsx         # Single transaction scoring & SHAP waterfall
+│   │   │   ├── BatchAnalysis.tsx   # CSV upload, batch processing, & export
+│   │   │   ├── Transactions.tsx    # Transaction audit explorer & filter modal
+│   │   │   ├── ModelInsights.tsx   # Model comparison table & SHAP plot
+│   │   │   ├── About.tsx           # Model card & regulatory compliance
+│   │   │   └── NotFound.tsx        # Fallback 404 route
+│   │   ├── services/
+│   │   │   └── api.ts              # Typed API client with custom error handling
+│   │   ├── types/
+│   │   │   └── index.ts            # TypeScript interfaces & API contracts
+│   │   ├── App.tsx                 # Main layout & router definition
+│   │   └── main.tsx                # Client entry point
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
 ├── data/
-│   ├── .gitkeep
-│   ├── README.md               # Dataset download instructions
-│   └── creditcard.csv          # Ignored by git; placed by user
+│   ├── creditcard.csv              # Primary ULB dataset (ignored in git)
+│   ├── sample_batch.csv            # Sample test batch for validation
+│   └── README.md
 ├── models/
-│   └── .gitkeep                # Serialized pipelines & models
-├── notebooks/
-│   └── 01_eda.ipynb            # Exploratory Data Analysis & findings
+│   ├── best_model.joblib           # Serialized Champion Model Pipeline
+│   └── .gitkeep
 ├── reports/
-│   └── .gitkeep                # Metrics, confusion matrices & PR curves
-├── src/
-│   ├── __init__.py
-│   ├── config.py               # Single source of truth for paths & schemas
-│   ├── data_validation.py      # Schema and data integrity verification
-│   ├── preprocessing.py        # Leakage-free preprocessing pipelines
-│   ├── train.py                # Model training routines
-│   ├── evaluate.py             # Evaluation metrics & report generation
-│   ├── predict.py              # Single & batch inference interface
-│   ├── risk_engine.py          # Probability-to-risk scoring engine
-│   └── explainability.py       # SHAP TreeExplainer & attribution engine
-├── tests/
-│   ├── __init__.py
-│   ├── test_config.py          # Configuration and path validation tests
-│   ├── test_dashboard.py       # Streamlit AppTest and dashboard verification
-│   ├── test_data_validation.py # Data validation tests
-│   ├── test_explainability.py  # SHAP explainer & attribution tests
-│   ├── test_preprocessing.py   # Leakage prevention & pipeline tests
-│   ├── test_risk_engine.py     # Threshold and risk score boundary tests
-│   └── test_predictions.py     # End-to-end inference verification
-├── app.py                      # Interactive Streamlit dashboard
-├── PROJECT_PROGRESS.md         # Authoritative progress and execution log
-├── README.md                   # System documentation & setup guide
-├── requirements.txt            # Pinned dependency manifest
-└── .gitignore                  # Git protection rules
+│   ├── comparison_report.json      # Verified metrics across all candidate models
+│   ├── baseline_report.json        # Baseline Logistic Regression evaluation
+│   ├── pr_curve_comparison.png     # Precision-Recall curve comparison artifact
+│   └── confusion_matrix_*.png      # Confusion matrix plots
+├── src/                            # Machine Learning & Inference Core
+│   ├── config.py                   # Centralized configuration & directory paths
+│   ├── data_validation.py          # Dataset schema and integrity verification
+│   ├── preprocessing.py            # Leakage-free preprocessing pipeline
+│   ├── train.py                    # Stratified training routines
+│   ├── evaluate.py                 # Imbalance-aware evaluation protocols
+│   ├── predict.py                  # Production inference predictor
+│   ├── risk_engine.py              # Calibrated risk scoring engine
+│   └── explainability.py           # SHAP TreeExplainer & waterfall generator
+├── tests/                          # Root Pytest Suite (ML Pipeline & Core)
+│   ├── test_config.py
+│   ├── test_data_validation.py
+│   ├── test_preprocessing.py
+│   ├── test_train_evaluate.py
+│   ├── test_risk_engine.py
+│   ├── test_predictions.py
+│   ├── test_explainability.py
+│   └── test_dashboard.py           # Legacy Streamlit AppTest verification
+├── app.py                          # Legacy Streamlit prototype (preserved)
+├── requirements.txt                # Python dependencies
+├── PROJECT_PROGRESS.md             # Authoritative phase milestone tracking
+└── README.md                       # Comprehensive system documentation
 ```
 
 ---
 
-## 3. Setup & Installation Guide
+## 5. Dataset & Target Variable
+
+The system is trained and evaluated on the **ULB Machine Learning Group Credit Card Fraud Detection** benchmark dataset:
+- **Total Transactions**: 284,807 transactions recorded over a two-day period in September 2013 by European cardholders.
+- **Target Variable**: `Class` (Binary classification: `0` = Legitimate, `1` = Fraudulent).
+- **Class Distribution**:
+  - Legitimate (`Class = 0`): 284,315 transactions (99.8273%)
+  - Fraudulent (`Class = 1`): 492 transactions (0.1727%)
+  - Imbalance Ratio: **577.88 : 1**
+- **Features**:
+  - `Time`: Elapsed seconds between this transaction and the first transaction in the dataset.
+  - `Amount`: Transaction amount in Euros (EUR).
+  - `V1`–`V28`: 28 numerical principal components obtained via PCA to protect confidential cardholder identities.
+
+---
+
+## 6. Setup & Installation Guide
 
 ### Prerequisites
-- Python 3.10+ (Verified on Python 3.13.1)
-- Git 2.20+
+- **Python**: 3.10+ (Verified on 3.13.1)
+- **Node.js**: 20.0+ (Verified on 24.17.0)
+- **Git**: 2.20+
 
-### Step 1: Clone and Enter the Repository
+### Step 1: Clone Repository
 ```bash
-git clone <your-repository-url>
+git clone <repository-url>
 cd Fraud_Detection
 ```
 
-### Step 2: Set Up Local Virtual Environment
+### Step 2: Configure Python Virtual Environment & Install Dependencies
 ```bash
-# On Windows PowerShell:
+# Windows (PowerShell):
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# On macOS/Linux:
+# macOS / Linux:
 python3 -m venv .venv
 source .venv/bin/activate
-```
 
-### Step 3: Install Pinned Dependencies
-```bash
+# Upgrade pip & install backend dependencies:
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 4: Run Automated Tests
+### Step 3: Install Frontend Dependencies
 ```bash
-pytest tests/ -v
+cd frontend
+npm install
+cd ..
+```
+
+### Step 4: Environment Variables Configuration
+The frontend connects to the backend through `VITE_API_BASE_URL`.
+- A template file exists at `frontend/.env.example`.
+- Create a local configuration:
+```bash
+# In frontend/.env:
+VITE_API_BASE_URL=http://localhost:8000
+```
+If omitted, the frontend automatically defaults to `http://localhost:8000`.
+
+---
+
+## 7. Running the System
+
+### Option A: Run Backend Service (FastAPI)
+From the repository root:
+```bash
+# Start FastAPI with Uvicorn auto-reload:
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- Interactive Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc Documentation: `http://127.0.0.1:8000/redoc`
+- Health Endpoint: `http://127.0.0.1:8000/api/health`
+
+### Option B: Run Frontend Dashboard (Vite)
+In a separate terminal:
+```bash
+cd frontend
+npm run dev
+```
+- Open your browser at: `http://127.0.0.1:5173`
+
+---
+
+## 8. Available API Endpoints & Request Contracts
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Service health status, model load status, and version |
+| `GET` | `/api/model-info` | Metadata, champion model class, feature schema, and thresholds |
+| `GET` | `/api/metrics` | Model comparison metrics (PR-AUC, ROC-AUC, Recall, Precision, F1) |
+| `POST` | `/api/predict` | Single transaction fraud prediction and risk score assessment |
+| `POST` | `/api/predict/batch` | High-throughput CSV file batch scoring and summary statistics |
+| `GET` | `/api/sample-batch` | Download valid sample CSV with legitimate and fraud rows |
+| `POST` | `/api/explanations/local` | SHAP local feature attribution waterfall values |
+| `GET` | `/api/explanations/global` | Top 30 globally ranked SHAP feature importance values |
+| `GET` | `/api/explanations/summary-plot` | Precomputed global SHAP beeswarm summary plot (PNG image stream) |
+| `GET` | `/api/transactions/explorer` | Filterable evaluation dataset rows for auditing |
+
+### Example 1: Single Prediction (`POST /api/predict`)
+
+**Request Payload:**
+```json
+{
+  "features": {
+    "Time": 406.0,
+    "Amount": 1.0,
+    "V1": -2.31,
+    "V2": 1.95,
+    "V3": -1.61,
+    "V4": 3.99,
+    "V5": -0.52,
+    "V6": -1.43,
+    "V7": -2.54,
+    "V8": 1.39,
+    "V9": -2.77,
+    "V10": -2.77,
+    "V11": 3.20,
+    "V12": -2.90,
+    "V13": -0.60,
+    "V14": -4.29,
+    "V15": 0.39,
+    "V16": -1.14,
+    "V17": -2.83,
+    "V18": -0.01,
+    "V19": 0.42,
+    "V20": 0.13,
+    "V21": 0.52,
+    "V22": -0.04,
+    "V23": -0.47,
+    "V24": 0.32,
+    "V25": 0.04,
+    "V26": 0.18,
+    "V27": 0.26,
+    "V28": -0.14
+  },
+  "low_threshold": 0.30,
+  "high_threshold": 0.70
+}
+```
+
+**Response Payload (200 OK):**
+```json
+{
+  "fraud_probability": 0.9946,
+  "risk_score": 99,
+  "risk_category": "High Risk",
+  "operational_recommendation": "Immediate Interception: Severe fraud risk. Hold/decline transaction and alert cardholder.",
+  "model_name": "RandomForestClassifier",
+  "threshold_configuration": {
+    "low_threshold": 0.3,
+    "high_threshold": 0.7
+  },
+  "transaction_summary": {
+    "amount": 1.0,
+    "time": 406.0
+  }
+}
 ```
 
 ---
 
-## 4. Dataset Contract & Obtaining the Data
-This project is built on the **ULB Credit Card Fraud Detection** dataset (284,807 transactions with 492 frauds).
+## 9. Machine Learning Evaluation & Model Benchmark
 
-1. Download `creditcard.csv` from [Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud).
-2. Save the file to:
-   ```
-   data/creditcard.csv
-   ```
-3. To point to an alternative dataset location without modifying source code, set the environment variable:
-   ```bash
-   # Windows PowerShell:
-   $env:FRAUD_DATASET_PATH="C:\path\to\your\creditcard.csv"
-   ```
+Models were trained on an 80% stratified training partition (227,845 rows, 394 frauds) and evaluated on an isolated 20% holdout test partition (56,962 rows, 98 frauds) with zero data leakage:
 
----
+| Model Architecture | PR-AUC (Primary) | Recall | Precision | F1-Score | ROC-AUC | False Positives |
+|---|---|---|---|---|---|---|
+| **Random Forest (Balanced Champion)** | **0.8541** | **0.8469** | **0.7281** | **0.7830** | **0.9702** | **31** |
+| XGBoost (scale_pos_weight) | 0.8415 | 0.8163 | 0.8889 | 0.8511 | 0.9790 | 10 |
+| Baseline Logistic Regression (Balanced) | 0.7175 | 0.9184 | 0.0609 | 0.1142 | 0.9720 | 1,388 |
+| Logistic Regression + SMOTE | 0.7251 | 0.9184 | 0.0628 | 0.1176 | 0.9744 | 1,342 |
 
-## 5. Launching the Interactive Streamlit Dashboard
-
-Launch the fintech risk assessment dashboard:
-```bash
-# Using Python runner or Streamlit CLI:
-streamlit run app.py
-```
-Or via virtual environment Python:
-```bash
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-### Dashboard Sections
-1. **Executive Overview**: Real-time KPI cards (test volume, recall, precision, PR-AUC), test confusion matrix, and operational tier breakdown.
-2. **Single Transaction Scoring**: Real-time form with quick-fill presets from real dataset samples (legitimate vs. fraud), manual parameter inputs across all 30 canonical features (`Time`, `V1`–`V28`, `Amount`), threshold-driven risk scoring, and inline local SHAP attribution expander.
-3. **Batch CSV Analysis**: High-throughput file upload, strict schema validation, batch risk scoring, category filtering, and exportable CSV download. A 10-row sample CSV is provided in `data/sample_batch_transactions.csv`.
-4. **Model Performance & Benchmarks**: Test set evaluation matrix across Logistic Regression, Random Forest, and XGBoost, Precision-Recall curves, and architectural trade-off analysis.
-5. **Model Explainability (SHAP)**: Global feature importance rankings, beeswarm summary visualization, and interactive local transaction attribution plots displaying positive/negative probability contributions.
-6. **Transaction Explorer**: Interactive browsing of historical transactions filtered by ground truth label, amount ranges, and real-time model scoring.
-7. **Governance & Limitations**: Model card, dataset constraints, probability calibration notes, and financial regulatory disclaimer.
+### Why Random Forest is the Champion Model:
+While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it produces **1,388 false positives** (precision of only 6.09%), causing massive operational alert fatigue. Random Forest achieves **84.69% recall with only 31 false positives** (72.81% precision), reducing false alarms by **97.7%** and achieving the highest holdout **PR-AUC of 0.8541**.
 
 ---
 
-## 6. Development Phases
+## 10. Automated Testing & Verification Results
 
-- **Phase 0**: Workspace, Environment, and Repository Setup — **[VERIFIED]**
-- **Phase 1**: Data Validation and Exploratory Data Analysis — **[VERIFIED]**
-- **Phase 2**: Preprocessing and Experimental Design — **[VERIFIED]**
-- **Phase 3**: Logistic Regression Baseline — **[VERIFIED]**
-- **Phase 4**: Imbalance Handling Experiments (Class Weighting vs. SMOTE) — **[VERIFIED]**
-- **Phase 5**: Model Comparison and Selection (Champion: Random Forest, PR-AUC 0.8462) — **[VERIFIED]**
-- **Phase 6**: Risk Scoring Engine & Prediction Interface — **[VERIFIED]**
-- **Phase 7**: Interactive Streamlit Dashboard — **[VERIFIED]**
-- **Phase 8**: Model Explainability (SHAP) — **[VERIFIED]**
-- **Phase 9**: Comprehensive Quality Assurance & Reliability Tests — *[Pending]*
-- **Phase 10**: Deployment and Portfolio Preparation — *[Pending]*
-- **Phase 11**: Final Review and Interview Readiness — *[Pending]*
+### Backend Test Suite (Pytest)
+```bash
+.\.venv\Scripts\python.exe -m pytest tests backend/tests -v
+```
+**Results**:
+- **84 of 84 tests PASSED** in 30.41s (100% pass rate).
+- Tests cover: configuration paths, data validation & schema checking, leakage-free preprocessing, train/eval pipelines, risk threshold boundaries, predictions engine, SHAP attribution math, FastAPI endpoints, CORS preflight, CSV batch uploading, and error handling.
 
-Consult `PROJECT_PROGRESS.md` for real-time phase execution logs and verified metrics.
+### Frontend Quality Checks (TypeScript & Linter)
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+**Results**:
+- **Oxlint**: 0 errors across 18 source files.
+- **TypeScript Compiler (`tsc -b`)**: 0 errors.
+- **Vite Production Bundle**: Successfully built in 3.20s (`dist/assets/index-*.js`, `dist/assets/index-*.css`).
 
+### End-to-End Integration Testing
+- Verified live communication between Vite frontend (`:5173`) and FastAPI backend (`:8000`).
+- Tested all 6 application routes, form submission, SHAP waterfall rendering, transaction modal preloading, batch CSV upload, and client-side 404 fallback.
+- Browser test recorded to: `e2e_verification_1792257993991.webp`.
+
+---
+
+## 11. Known Limitations & Production Deployment Roadmap
+
+1. **In-Memory Batch Execution**:
+   - The current batch scoring endpoint processes uploaded CSV files directly in memory via Pandas.
+   - *Production Roadmap*: For files larger than 100MB, integrate Celery or Redis Queue for asynchronous background worker processing with polling/webhook notifications.
+2. **Dynamic Concept Drift Monitoring**:
+   - The system uses static pre-trained model weights. Financial fraud patterns evolve over time (concept drift).
+   - *Production Roadmap*: Integrate Evidently AI or Evidently Cloud to monitor input feature drift (KS-test / PSI) and prediction drift on live production traffic.
+3. **Containerization & Cloud Orchestration**:
+   - Currently tested locally with Uvicorn and Vite.
+   - *Production Roadmap*: Deploy with multi-stage `Dockerfile` (Node build -> Python FastAPI container), Kubernetes ingress with TLS termination, and Redis-backed rate limiting.
+4. **Authentication & Role-Based Access (RBAC)**:
+   - Inference endpoints are currently unauthenticated for portfolio demonstration.
+   - *Production Roadmap*: Implement OAuth2 / JWT bearer token validation separating Fraud Analysts (read/evaluate) from Compliance Officers (threshold tuning).

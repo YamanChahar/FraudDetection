@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Node v24.17.0, npm 11.13.0
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Full-Stack Architecture Migration — Subphase B Complete & Verified (Awaiting Approval for Subphase C)
+- **Overall Status**: Full-Stack Architecture Migration — Subphase F Complete & Verified (Awaiting Explicit Approval for Subphase G — Final Release Decisions and Streamlit Removal, if approved)
 
 ---
 
@@ -514,7 +514,89 @@ npm run dev
 - [x] All 75 backend tests passing with 100% pass rate.
 - [x] Streamlit code preserved completely intact.
 - [x] Subphase E marked **VERIFIED**.
-- [ ] Explicit user approval received before proceeding to Subphase F (Comprehensive System Testing & Documentation).
+- [x] Explicit user approval received before proceeding to Subphase F (Comprehensive System Testing & Documentation).
+
+---
+
+### Subphase F — Comprehensive System Testing, End-to-End Verification, and Documentation
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user approval received.
+
+#### 1. Scope & Execution Overview
+Comprehensive system testing and end-to-end verification across the entire decoupled stack (FastAPI backend, React/TypeScript frontend, and machine learning inference pipeline) followed by complete system documentation:
+- **Backend Quality & Edge Cases**: Expanded integration test suite (`backend/tests/test_api.py`) from 11 to 20 tests covering custom threshold validation, non-numeric feature rejection, empty/missing-column CSV handling, transaction explorer query bounds, image streaming, and CORS preflight headers.
+- **Full Backend & ML Non-Regression Suite**: 84 of 84 tests passing with 100% pass rate (`pytest tests backend/tests -v`).
+- **Frontend Code Quality**: Verified 0 TypeScript compiler errors (`tsc -b`), 0 oxlint errors, and clean production asset generation.
+- **Live End-to-End Browser Subagent Testing**: Conducted automated browser testing on live servers (`http://127.0.0.1:8000` and `http://127.0.0.1:5173`) validating all 6 core pages, prediction responses, form error states, transaction auditing, and 404 fallback.
+- **Production Documentation**: Completely rewrote `README.md` to document the full-stack architecture, API endpoint contracts, schemas, model benchmarks, setup guide, testing results, and deployment limitations.
+
+#### 2. Detailed Verification Outcomes
+
+##### A. Backend Test Suite (`pytest tests backend/tests -v`)
+- **Total Tests**: 84 tests collected across 8 test suites.
+- **Result**: **84 passed in 30.41s (100% pass rate)**.
+- **Breakdown**:
+  - `tests/test_config.py` (4 tests): Path constants, schema definitions, and default thresholds.
+  - `tests/test_data_validation.py` (9 tests): Missing files, schema validation, non-numeric types, nulls/infs, non-binary target, duplicates, class distribution.
+  - `tests/test_preprocessing.py` (9 tests): Stratified split disjointness, stratification preservation, reproducibility, RobustScaler isolation, and leakage protection.
+  - `tests/test_train_evaluate.py` (12 tests): Pipeline fitting, probability outputs, metrics calculation, SMOTE/unweighted/RandomForest/XGBoost pipelines, evaluation report serialization.
+  - `tests/test_risk_engine.py` (7 tests): Probability boundary validation, 0–100 integer scaling, category boundaries, custom thresholds, and payload contracts.
+  - `tests/test_predictions.py` (10 tests): Defensive feature validation, column realignment, missing/null/nan/inf/non-numeric rejection, batch alignment, and index preservation.
+  - `tests/test_explainability.py` (8 tests): SHAP TreeExplainer initialization, efficiency property verification, top risk drivers, figure generation, and global importance.
+  - `tests/test_dashboard.py` (5 tests): Preserved Streamlit AppTest verification.
+  - `backend/tests/test_api.py` (20 tests):
+    - `test_api_health_endpoint`: 200 OK, returns healthy status, model loaded, version.
+    - `test_api_model_info_endpoint`: 200 OK, returns model metadata, feature list, and thresholds.
+    - `test_api_metrics_endpoint`: 200 OK, returns model comparison metrics.
+    - `test_api_predict_single_legitimate_transaction`: 200 OK, valid Low Risk prediction.
+    - `test_api_predict_single_with_custom_thresholds`: 200 OK, custom boundaries honored.
+    - `test_api_predict_single_invalid_threshold_order_raises_422`: 422 Unprocessable Entity when high <= low.
+    - `test_api_predict_single_missing_features_raises_422`: 422 Unprocessable Entity when features missing.
+    - `test_api_predict_single_non_numeric_feature_raises_422`: 422 Unprocessable Entity on string feature value.
+    - `test_api_predict_batch_csv_upload`: 200 OK, batch predictions and summary metrics.
+    - `test_api_predict_batch_with_custom_thresholds`: 200 OK, batch custom thresholds applied.
+    - `test_api_predict_batch_rejects_non_csv`: 400 Bad Request on non-CSV file type.
+    - `test_api_predict_batch_empty_csv_raises_422`: 422 Unprocessable Entity on empty file.
+    - `test_api_predict_batch_missing_columns_raises_422`: 422 Unprocessable Entity on malformed CSV.
+    - `test_api_sample_batch_download`: 200 OK, valid CSV streaming response.
+    - `test_api_global_explanations`: 200 OK, returns top 30 ranked global features.
+    - `test_api_global_summary_plot_stream`: 200 OK, streams precomputed beeswarm PNG.
+    - `test_api_local_explanation`: 200 OK, returns waterfall values and base value.
+    - `test_api_transactions_explorer`: 200 OK, returns filtered evaluation records.
+    - `test_api_transactions_explorer_invalid_class_filter_raises_422`: 422 Unprocessable Entity on invalid filter.
+    - `test_api_cors_headers`: OPTIONS preflight returns `Access-Control-Allow-Origin: http://localhost:5173`.
+
+##### B. Frontend Quality & Production Build
+- **Linter (`npm run lint` / oxlint)**: 0 errors across 18 source files.
+- **TypeScript Compiler (`tsc -b`)**: 0 errors.
+- **Vite Production Build (`npm run build`)**: Built in 3.20s:
+  - `dist/index.html` (0.45 kB)
+  - `dist/assets/index-BZ5WUdlf.css` (23.09 kB)
+  - `dist/assets/index-C6jPJld2.js` (729.88 kB)
+
+##### C. End-to-End Integration Testing via Browser Subagent
+- **Test Execution**: Live servers running concurrently (FastAPI port 8000, Vite port 5173).
+- **Session Artifact**: `e2e_verification_1792257993991.webp`.
+- **Results Across Routes**:
+  1. **Overview (`/`)**: PASS. KPI cards display genuine PR-AUC (0.8541), Recall (0.8469), Precision (0.7281). System Status indicator shows FastAPI Engine READY.
+  2. **Analyze (`/analyze`)**: PASS. Form submission returned calibrated fraud probability (99.46%), High Risk score (99/100), and SHAP waterfall chart. Invalid amount correctly triggered defensive input validation banner.
+  3. **Batch Analysis (`/batch-analysis`)**: PASS. Dropzone, sample download, and batch processing verified.
+  4. **Transactions (`/transactions`)**: PASS. Ground truth filtering, audit inspection modal, and "Score in Single Analysis" feature preloading verified.
+  5. **Model Insights (`/model-insights`)**: PASS. Candidate comparison table, confusion matrix, dynamic feature search, and global SHAP beeswarm plot verified.
+  6. **About (`/about`)**: PASS. Dataset card, preprocessing pipeline, and 3-tier risk decision policy verified.
+  7. **404 Route (`/nonexistent-route`)**: PASS. Clean fallback card with return-to-dashboard navigation.
+
+#### 3. Subphase F Acceptance Checklist
+- [x] Backend integration test suite expanded with edge cases, validation, and CORS tests.
+- [x] All 84 backend and ML tests passing (100% pass rate).
+- [x] Machine learning pipeline verified: Random Forest champion, RobustScaler leakage protection, SHAP TreeExplainer, and 3-tier risk engine.
+- [x] Zero TypeScript compiler errors and zero linter errors.
+- [x] Production bundle builds cleanly.
+- [x] Live end-to-end browser subagent testing passed across all 6 pages with 0 console errors.
+- [x] Comprehensive, production-ready `README.md` created.
+- [x] Legacy Streamlit application (`app.py`, `tests/test_dashboard.py`) preserved completely intact.
+- [x] Subphase F marked **VERIFIED**.
+- [ ] Explicit user approval received before proceeding to Subphase G (Final Release Decisions and Streamlit Removal, if approved).
+
 
 
 

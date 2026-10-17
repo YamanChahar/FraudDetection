@@ -281,7 +281,96 @@ Authoritative single source of truth for project execution status, technical dec
 - [x] Implemented 11 automated integration tests in `backend/tests/test_api.py`.
 - [x] Verified all 75 automated tests pass cleanly across the repository.
 - [x] Subphase B status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Subphase C (React + Vite + TypeScript Shell).
+- [x] Explicit user approval received to proceed to Subphase C (React + Vite + TypeScript Shell).
+
+---
+
+### Subphase C — React Website Shell, Vite Setup, and Routing
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user approval received.
+
+#### 1. Key Technical Accomplishments
+- **Frontend Project Scaffolding**: Built a clean, decoupled React 19 single-page application using Vite, TypeScript, Tailwind CSS, and React Router v7 inside the dedicated `frontend/` directory.
+- **Fintech Dark Design System**: Configured a bespoke visual theme in `frontend/tailwind.config.js` and `frontend/src/index.css`:
+  - Curated dark navy palette (`navy-950` #070A12 to `navy-50` #F8FAFC) with elevated card surfaces (`#111827`, `#1E293B`).
+  - High-contrast accessible risk badges (`badge-low`, `badge-medium`, `badge-high`, `badge-blue`, `badge-neutral`).
+  - Custom dark scrollbars and responsive typography using Inter.
+- **Shared Desktop-First Shell Layout**:
+  - `Sidebar.tsx`: Fixed desktop navigation bar with active route highlighting, brand shield icon, and live backend connection badge. Includes responsive mobile drawer with backdrop overlay.
+  - `Header.tsx`: Sticky top header with route-synchronized dynamic breadcrumb titles, active policy pill (`T1 < 0.30`, `T2 >= 0.70`), and engine status pill.
+  - `Layout.tsx`: Unified wrapper combining sidebar, header, dynamic `<Outlet />`, and persistent regulatory governance footer.
+- **Route Implementation**: Configured declarative client-side routing in `frontend/src/App.tsx` covering all 6 required routes plus a 404 fallback:
+  1. `/` (`Overview.tsx`): Executive risk posture, key performance indicators (0.8541 AUCPR), validated model benchmark matrix, and Subphase D telemetry placeholders.
+  2. `/analyze` (`SingleAnalysis.tsx`): Feature input container shell for 30 canonical variables, preset loader placeholder, verdict container, and local SHAP attribution placeholder.
+  3. `/batch-analysis` (`BatchAnalysis.tsx`): Drag-and-drop CSV upload container shell, batch assessment table, and export controls placeholder.
+  4. `/transactions` (`Transactions.tsx`): Multi-field filter bar (risk tier, class label, search), paginated records table container, and audit log shell.
+  5. `/model-insights` (`ModelInsights.tsx`): Champion model benchmark cards, interactive Precision-Recall curve shell, and global SHAP feature importance container.
+  6. `/about` (`About.tsx`): Comprehensive technical documentation covering ULB dataset provenance, PCA transformation details, 3-tier risk engine policy, decoupled system topology, and SR 11-7 regulatory boundaries.
+  7. `*` (`NotFound.tsx`): Accessible 404 fallback page with return navigation.
+- **Strict Quality Constraints Respected**:
+  - Zero hard-coded fake API mock data.
+  - Zero client-side JavaScript prediction logic.
+  - Minimal, clearly labeled placeholders awaiting Subphase D endpoint integration.
+  - All existing Python backend source code, ML models, and Streamlit code preserved completely intact.
+- **Environment Configuration**: Added `frontend/.env.example` and `frontend/.env` with `VITE_API_BASE_URL=http://localhost:8000`. Configured `.gitignore` to prevent secret leakage.
+
+#### 2. Frontend Architecture & Dependencies
+- **Core Framework**: React 19.2.8, React DOM 19.2.8, Vite 8.3.4, TypeScript 6.0.2
+- **Routing**: React Router DOM 7.18.4
+- **Styling**: Tailwind CSS 3.4.19, PostCSS 8.5.30, Autoprefixer 10.6.1
+- **Icons**: Lucide React 1.59.0
+- **Data Visualization**: Recharts 3.10.1 (installed and ready for Subphase D charts)
+
+#### 3. Verification & Browser Testing Results
+- **TypeScript Compilation & Production Build**:
+  - Command: `npm run build` (`tsc -b && vite build`)
+  - Result: **Zero TypeScript errors**, 1,939 modules transformed, production assets built in 2.17s:
+    - `dist/index.html` (0.45 kB)
+    - `dist/assets/index-DwxXGzun.css` (19.06 kB)
+    - `dist/assets/index-BHZaIjnT.js` (317.07 kB)
+- **Live Browser Navigation & SPA Verification (via Browser Subagent)**:
+  - Launched Vite dev server on `http://127.0.0.1:5173/`.
+  - Navigated directly to `/` -> Verified "Executive Overview & Risk Posture" header, sidebar links, and benchmark table.
+  - Navigated to `/analyze` -> Verified "Single Transaction Risk Scoring" header and feature form shell.
+  - **Tested page reload at `/analyze`** -> Successfully reloaded without 404 errors (Vite SPA HTML5 history fallback functioning).
+  - Navigated to `/batch-analysis` -> Verified "Batch CSV Transaction Scoring" header and upload shell.
+  - Navigated to `/transactions` -> Verified "Transaction Explorer & Audit Log" header and filter controls.
+  - Navigated to `/model-insights` -> Verified "Model Performance & SHAP Explainability" header and benchmark cards.
+  - Navigated to `/about` -> Verified "System Architecture & Governance" header and dataset documentation.
+  - Inspected browser console -> **0 uncaught JavaScript errors, 0 runtime warnings**.
+  - Browser session recorded to: `verify_routes_1792254850544.webp`.
+  - Screenshot verified: `subphase_c_about_page_1792254935341.png`.
+- **Backend Non-Regression Suite**:
+  - Command: `.\.venv\Scripts\python.exe -m pytest tests backend/tests -v`
+  - Result: **75 passed, 0 failed in 28.62s (100% pass rate)**. Confirmed backend remains completely untouched and functioning.
+
+#### 4. How to Run Independently
+- **Run Backend Service (FastAPI)**:
+  ```powershell
+  # In project root:
+  .\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --port 8000
+  # OpenAPI Swagger docs available at: http://localhost:8000/docs
+  ```
+- **Run Frontend Application (React + Vite)**:
+  ```powershell
+  # In frontend directory:
+  cd frontend
+  npm run dev
+  # Application available at: http://localhost:5173
+  ```
+
+#### 5. Subphase C Acceptance Checklist
+- [x] Dedicated `frontend/` directory created with Vite, React, TypeScript, and Tailwind CSS.
+- [x] Mutually compatible dependencies installed (`react@19`, `react-router-dom@7`, `tailwindcss@3.4`).
+- [x] Configured environment variable handling with `frontend/.env.example` and `frontend/.env`.
+- [x] Built responsive desktop-first fintech dark layout with Sidebar, Header, and Layout components.
+- [x] Built all 6 distinct route components (`Overview`, `SingleAnalysis`, `BatchAnalysis`, `Transactions`, `ModelInsights`, `About`) plus `NotFound`.
+- [x] Implemented React Router with client-side history navigation and refresh support.
+- [x] Verified zero TypeScript errors (`tsc -b`) and clean production build (`vite build`).
+- [x] Executed real browser navigation and reload testing via browser subagent with zero console errors.
+- [x] Verified 100% pass rate on existing 75 backend tests with zero modifications to backend code.
+- [x] Streamlit implementation preserved intact.
+- [x] Subphase C marked **VERIFIED**.
+- [ ] Explicit user approval received before proceeding to Subphase D (Connect Website Pages to Backend Endpoints).
 
 
 

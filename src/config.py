@@ -20,6 +20,9 @@ REPORTS_DIR: Final[Path] = PROJECT_ROOT / "reports"
 NOTEBOOKS_DIR: Final[Path] = PROJECT_ROOT / "notebooks"
 TESTS_DIR: Final[Path] = PROJECT_ROOT / "tests"
 
+# Model Artifact Locations
+BEST_MODEL_PATH: Final[Path] = MODELS_DIR / "best_model.joblib"
+
 # Dataset Configuration (configurable via FRAUD_DATASET_PATH environment variable)
 DEFAULT_DATASET_FILENAME: Final[str] = "creditcard.csv"
 DATASET_PATH: Final[Path] = Path(

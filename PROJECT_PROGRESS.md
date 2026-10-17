@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 2 Complete & Verified — Awaiting Approval for Phase 3
+- **Overall Status**: Phase 3 Complete & Verified — Awaiting Approval for Phase 4
 
 ---
 
@@ -19,8 +19,8 @@ Authoritative single source of truth for project execution status, technical dec
 |---|---|---|---|
 | **Phase 0** | Workspace, Environment, and Repository Setup | **VERIFIED** | Yes (Approved) |
 | **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Yes (Approved) |
-| **Phase 2** | Preprocessing and Experimental Design | **VERIFIED** | Awaiting Approval to proceed to Phase 3 |
-| **Phase 3** | Logistic Regression Baseline | NOT STARTED | Pending |
+| **Phase 2** | Preprocessing and Experimental Design | **VERIFIED** | Yes (Approved) |
+| **Phase 3** | Logistic Regression Baseline | **VERIFIED** | Awaiting Approval to proceed to Phase 4 |
 | **Phase 4** | Imbalance Handling Experiments | NOT STARTED | Pending |
 | **Phase 5** | Model Comparison and Selection | NOT STARTED | Pending |
 | **Phase 6** | Risk Scoring and Prediction Interface | NOT STARTED | Pending |
@@ -35,114 +35,98 @@ Authoritative single source of truth for project execution status, technical dec
 ## Detailed Phase Logs
 
 ### Phase 0 — Workspace, Environment, and Repository Setup
-- **Status**: **VERIFIED**
-- **Date Completed**: 2026-10-17
-- **Approval Received**: Explicit approval received from user.
-- **Summary**: Environment initialized, Git repository setup with strict `.gitignore`, portable `src/config.py`, and baseline test suite passing.
-
----
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
 
 ### Phase 1 — Data Validation and Exploratory Data Analysis
-- **Status**: **VERIFIED**
-- **Date Completed**: 2026-10-17
-- **Approval Received**: Explicit approval received from user.
-- **Summary**: Real dataset validated (284,807 rows, 31 columns, 0 nulls). Class imbalance (0.1727% fraud, 577.88:1 ratio) verified. Duplicate records (1,081 rows) audited without mutation. `notebooks/01_eda.ipynb` executed inplace with complete charts and statistical analysis.
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
+- Real dataset: 284,807 rows, 31 columns, 0 nulls. Imbalance: 99.8273% legit vs 0.1727% fraud (577.88:1 ratio). Duplicates: 1,081 rows.
+
+### Phase 2 — Preprocessing and Experimental Design
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
+- Stratified 80/20 split: 227,845 train rows (394 frauds), 56,962 test rows (98 frauds). Zero index overlap. RobustScaler for Time & Amount.
 
 ---
 
-### Phase 2 — Preprocessing and Experimental Design
+### Phase 3 — Logistic Regression Baseline
 - **Status**: **VERIFIED**
 - **Date Completed**: 2026-10-17
 
 #### 1. Tasks Completed
-- Implemented `src/preprocessing.py`:
-  - `prepare_features_and_target()`: Validates input schema, rejects invalid targets/features, separates `X` (30 features) and `y` (`Class`), and preserves canonical feature ordering.
-  - `create_stratified_split()`: Generates reproducible 80/20 train/test split with stratification on `y` and seed 42. Validates disjoint indices and class representation.
-  - `get_split_summary()`: Generates detailed partition metrics and audit reports.
-  - `build_preprocessor()`: Constructs `ColumnTransformer` with `RobustScaler` for `Time` and `Amount` while passing through `V1`–`V28` in exact canonical column order.
-  - `fit_preprocessor()`: Fits transformations **only** on training features to prevent data leakage.
-  - `transform_features()`: Applies fitted transformations returning a DataFrame with preserved canonical column names and original indices.
-  - `verify_leakage_protection()`: Formally verifies that fitted scaler parameters match `X_train` and were not influenced by `X_test`.
-  - `save_preprocessor()` and `load_preprocessor()`: Serializes and deserializes the fitted preprocessor artifact using `joblib`.
-- Installed Phase 2 dependencies (`scikit-learn==1.9.1`, `scipy==1.18.1`, `joblib==1.6.0`, and dependencies) in `.venv`.
-- Updated `requirements.txt` with exact pinned versions.
-- Implemented comprehensive unit test suite in `tests/test_preprocessing.py` (9 tests covering schema extraction, invalid target handling, disjoint index verification, stratified proportions, seed reproducibility, canonical column order preservation, leakage protection, and serialization).
-- Executed full test suite via `pytest` (22 passed in 24.93s, 100% pass rate).
-- Executed preprocessing workflow on the real 284,807-row dataset and verified exact dimensions, class counts, scaling parameters, and leakage protection.
+- Implemented `src/train.py`:
+  - `build_logistic_regression_pipeline()`: Assembles an end-to-end `Pipeline` incorporating the leakage-safe `RobustScaler` preprocessor and `LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)`.
+  - `train_baseline_logistic_regression()`: Trains the pipeline strictly on the 227,845 training samples without touch to test data.
+  - `save_pipeline()` and `load_pipeline()`: Persists the unified pipeline artifact containing both fitted preprocessing and model weights to `models/baseline_logistic_regression.joblib`.
+- Implemented `src/evaluate.py`:
+  - `evaluate_predictions()`: Computes Precision, Recall, F1-Score, ROC-AUC, Average Precision (PR-AUC), Accuracy, Confusion Matrix (TN, FP, FN, TP), operational error rates, and classification report.
+  - `evaluate_model()`: End-to-end evaluation on held-out test data.
+  - `save_evaluation_report()`: Generates machine-readable JSON (`reports/baseline_logistic_regression.json`) and formatted Markdown (`reports/baseline_logistic_regression.md`).
+- Implemented unit test suite in `tests/test_train_evaluate.py` (8 tests covering pipeline building, model fitting, prediction bounds, metric formulas, serialization roundtrips, and report saving).
+- Executed full test suite via `pytest` (30 passed in 9.05s, 100% pass rate).
+- Executed the baseline training and evaluation on the live dataset (227,845 train rows, 56,962 test rows) and recorded actual verified metrics.
 
-#### 2. Actual Verified Partition & Preprocessing Statistics
-- **Total Dataset**: 284,807 rows, 30 features + 1 target
-- **Training Set (80%)**:
-  - Dimensions: **227,845 rows x 30 columns**
-  - Legitimate (Class 0): **227,451** records
-  - Fraudulent (Class 1): **394** records
-  - Fraud Percentage: **0.1729%**
-  - Imbalance Ratio: **577.29 : 1**
-- **Test Set (20% - Isolated)**:
-  - Dimensions: **56,962 rows x 30 columns**
-  - Legitimate (Class 0): **56,864** records
-  - Fraudulent (Class 1): **98** records
-  - Fraud Percentage: **0.1720%**
-  - Imbalance Ratio: **580.24 : 1**
-- **Disjoint Index Verification**: `True` (0 overlapping rows between train and test).
-- **Stratification Integrity**: Verified. Both partitions exhibit identical fraud rates (~0.172%).
-- **Fitted RobustScaler Parameters (from X_train only)**:
-  - `Time` Median Center: **84,805.0 seconds** (matches `X_train.median()`; not test data).
-  - `Amount` Median Center: **$22.00** (matches `X_train.median()`).
-- **Feature Column Order Preservation**: `True` (`[Time, V1, V2, ..., V28, Amount]`).
-- **Artifact Persistence**: Saved fitted preprocessor to `models/preprocessor.joblib` (ignored by git).
+#### 2. Actual Verified Baseline Evaluation Results (Held-Out Test Set: 56,962 Samples)
 
-#### 3. Technical Decisions & Rationale
-- **Why Preprocessing is Fitted on Training Data Only (Leakage Prevention)**:
-  Fitting a scaler on the entire dataset calculates global statistics (median, IQR, mean, std) that incorporate information from the test set into the training representations. This artificially inflates validation metrics and causes performance collapse in production when truly unseen transactions arrive.
-- **Why RobustScaler for Time and Amount**:
-  Phase 1 EDA revealed that transaction amount has extreme outliers (max $25,691 vs median $22) and high skewness. `StandardScaler` uses mean and standard deviation, which are heavily distorted by extreme values. `RobustScaler` uses the median and Interquartile Range (IQR = 75th - 25th percentile), ensuring scale robustness without clipping or discarding real transactions.
-- **Why Passthrough for V1–V28**:
-  Features `V1` through `V28` are outputs of PCA performed by the original data collectors, which means they are already centered around zero with comparable unit variances. Applying a second standardization would be redundant and could distort PCA coordinate relationships.
-- **Why Stratified 80/20 Partitioning**:
-  Because fraud represents only ~0.17% of the dataset, random unstratified splitting could result in test sets with significantly varying fraud rates, leading to unreliable performance estimates. Stratification guarantees that the test set evaluates models against the exact operational base rate.
+| Metric | Score | Interpretation / Financial Context |
+|---|---|---|
+| **Average Precision (PR-AUC)** | **`0.7175`** | Primary benchmark for imbalanced fraud across all thresholds. |
+| **Recall (Sensitivity)** | **`0.9184`** (91.84%) | Caught **90 out of 98** actual frauds in the test set. Only 8 frauds missed. |
+| **Precision** | **`0.0609`** (6.09%) | Low precision due to extreme 578:1 base rate and class weighting. |
+| **F1-Score** | **`0.1142`** | Harmonic mean reflecting the trade-off at the default 0.50 threshold. |
+| **ROC-AUC** | **`0.9720`** | High ranking capability, but partially optimistic due to large True Negative pool. |
+| **Raw Accuracy** | **`0.9755`** | Non-primary metric; lowered from 99.83% naive accuracy to detect 91.8% of fraud. |
+
+#### Confusion Matrix (56,962 Test Transactions)
+- **True Negatives (TN)**: **`55,476`** (Legitimate transactions correctly approved)
+- **False Positives (FP)**: **`1,388`** (Legitimate transactions flagged as fraud — false alarms)
+- **False Negatives (FN)**: **`8`** (Fraudulent transactions missed — unrecovered fraud loss)
+- **True Positives (TP)**: **`90`** (Fraudulent transactions successfully intercepted)
+
+#### Operational Error Rates:
+- **False Positive Rate (FPR)**: `0.0244` (Flagged 2.44% of legitimate volume)
+- **False Negative Rate (Miss Rate)**: `0.0816` (Missed 8.16% of fraudulent transactions)
+
+#### 3. Technical Decisions & Analytical Insights
+- **What Logistic Regression Learns**:
+  Logistic Regression fits a linear decision hyperplane $\mathbf{w}^T \mathbf{x} + b$ mapped through a sigmoid link function $\sigma(z) = \frac{1}{1 + e^{-z}}$ to estimate the log-odds of a transaction being fraudulent.
+- **Impact of `class_weight='balanced'`**:
+  In unweighted regression, each sample contributes equally to the log-loss. Because legitimate transactions represent 99.83% of data, an unweighted model is incentivized to ignore the minority class to minimize loss. Setting `class_weight='balanced'` scales the loss gradient for fraud samples by $\approx 577$, forcing the optimization algorithm to shift its decision boundary into the legitimate distribution to avoid missing fraud.
+- **The Operational Trade-off**:
+  While balanced class weights successfully achieved an impressive **91.84% recall**, the linear boundary flags **1,388 legitimate transactions** as fraud, yielding a precision of **6.09%** (~1 true fraud caught per ~16 alerts). In a live bank, this would produce investigator alert fatigue and cardholder friction.
+- **Why This is a Baseline**:
+  A single linear hyperplane cannot capture non-linear feature interactions between transaction amounts, time of day, and anonymized PCA components. This sets our performance benchmark: any subsequent resampling technique (Phase 4) or non-linear model (Phase 5: Random Forest, XGBoost) must demonstrate improvement over this PR-AUC of **0.7175**.
 
 #### 4. Files Created / Modified
-- `src/preprocessing.py`: Complete leakage-free preprocessing and splitting module.
-- `tests/test_preprocessing.py`: 9 unit tests for splitting, scaling, leakage protection, and persistence.
-- `requirements.txt`: Updated with `scikit-learn` and `joblib` dependencies.
-- `models/preprocessor.joblib`: Serialized preprocessor artifact (git-ignored).
-- `PROJECT_PROGRESS.md`: Phase 2 status updated to VERIFIED with real partition statistics.
+- `src/train.py`: Pipeline construction, training, and artifact persistence.
+- `src/evaluate.py`: Imbalanced metrics computation, confusion matrix extraction, and report persistence.
+- `tests/test_train_evaluate.py`: Automated test suite for training, inference, and metrics.
+- `reports/baseline_logistic_regression.json`: Machine-readable evaluation report.
+- `reports/baseline_logistic_regression.md`: Human-readable summary report.
+- `models/baseline_logistic_regression.joblib`: Trained baseline pipeline artifact (git-ignored).
+- `PROJECT_PROGRESS.md`: Phase 3 updated to VERIFIED with verified metrics.
 
-#### 5. Commands Executed & Verified Outcomes
-- `.\.venv\Scripts\python.exe -m pip install scikit-learn`
-  - Output: Successfully installed scikit-learn 1.9.1, scipy 1.18.1, joblib 1.6.0 (Verified).
-- `.\.venv\Scripts\python.exe -m pytest tests/ -v`
-  - Output: 22 passed in 24.93s (Verified).
-- Execution script on real `data/creditcard.csv`:
-  - Output: Verified 227,845 train rows, 56,962 test rows, disjoint indices, exact 0.172% stratification, and leakage-free scaling (Verified).
+#### 5. Automated Tests Run & Results
+- Total Tests: 30 (4 config + 9 data validation + 9 preprocessing + 8 train/eval)
+- `tests/test_train_evaluate.py` (8 tests) -> **ALL PASSED**:
+  - `test_build_logistic_regression_pipeline` -> **PASSED**
+  - `test_train_baseline_logistic_regression_produces_fitted_pipeline` -> **PASSED**
+  - `test_pipeline_predictions_and_probabilities_validity` -> **PASSED**
+  - `test_evaluate_predictions_metrics_calculation` -> **PASSED**
+  - `test_evaluate_predictions_raises_on_invalid_bounds` -> **PASSED**
+  - `test_evaluate_model_end_to_end` -> **PASSED**
+  - `test_save_and_load_pipeline` -> **PASSED**
+  - `test_save_evaluation_report` -> **PASSED**
+- Result: **30 passed, 0 failed in 9.05s (100% pass rate)**.
 
-#### 6. Automated Tests Run & Results
-- Total Tests: 22 (4 config + 9 data validation + 9 preprocessing)
-- `tests/test_config.py` (4 tests) -> **ALL PASSED**
-- `tests/test_data_validation.py` (9 tests) -> **ALL PASSED**
-- `tests/test_preprocessing.py` (9 tests) -> **ALL PASSED**:
-  - `test_prepare_features_and_target_success` -> **PASSED**
-  - `test_prepare_features_and_target_raises_on_invalid_target` -> **PASSED**
-  - `test_create_stratified_split_disjoint_indices` -> **PASSED**
-  - `test_create_stratified_split_preserves_stratification` -> **PASSED**
-  - `test_create_stratified_split_reproducibility` -> **PASSED**
-  - `test_get_split_summary` -> **PASSED**
-  - `test_scaling_preserves_canonical_columns_and_passthrough` -> **PASSED**
-  - `test_leakage_protection_verification` -> **PASSED**
-  - `test_preprocessor_serialization` -> **PASSED**
-- Result: **22 passed, 0 failed in 24.93s (100% pass rate)**.
-
-#### 7. Phase 2 Acceptance Checklist
-- [x] Verified Phase 1 completion and confirmed real dataset availability.
-- [x] Implemented schema-safe feature and target separation in `src/preprocessing.py`.
-- [x] Implemented reproducible stratified splitting with seed 42 and 80/20 ratio.
-- [x] Verified zero index overlap between train and test partitions (`disjoint_index_verified = True`).
-- [x] Verified class stratification preserved (train: 394 frauds / 0.1729%; test: 98 frauds / 0.1720%).
-- [x] Implemented `RobustScaler` for `Time` and `Amount` with passthrough for `V1`–`V28`.
-- [x] Verified fitted scaler parameters derived exclusively from `X_train` without leakage.
-- [x] Preserved canonical feature ordering and output dimensions across transformations.
-- [x] Serialized fitted preprocessor to `models/preprocessor.joblib`.
-- [x] Implemented 9 automated unit tests in `tests/test_preprocessing.py` (100% pass rate).
-- [x] Phase 2 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 3.
+#### 6. Phase 3 Acceptance Checklist
+- [x] Verified Phase 2 completion and confirmed clean environment state.
+- [x] Implemented end-to-end pipeline in `src/train.py` coupling preprocessing and Logistic Regression.
+- [x] Model trained exclusively on $X_{\text{train}}$ with `class_weight='balanced'`.
+- [x] Evaluated model strictly on held-out test set ($X_{\text{test}}$, $y_{\text{test}}$).
+- [x] Computed Precision, Recall, F1, ROC-AUC, PR-AUC, and Confusion Matrix.
+- [x] Saved machine-readable report to `reports/baseline_logistic_regression.json`.
+- [x] Saved formatted summary report to `reports/baseline_logistic_regression.md`.
+- [x] Persisted unified model artifact to `models/baseline_logistic_regression.joblib`.
+- [x] Implemented 8 automated unit tests in `tests/test_train_evaluate.py` (30/30 total tests pass).
+- [x] Documented operational trade-offs and rationale for Phase 4 experiments.
+- [x] Phase 3 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 4.

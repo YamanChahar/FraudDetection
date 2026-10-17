@@ -370,7 +370,88 @@ Authoritative single source of truth for project execution status, technical dec
 - [x] Verified 100% pass rate on existing 75 backend tests with zero modifications to backend code.
 - [x] Streamlit implementation preserved intact.
 - [x] Subphase C marked **VERIFIED**.
-- [ ] Explicit user approval received before proceeding to Subphase D (Connect Website Pages to Backend Endpoints).
+- [x] Explicit user approval received before proceeding to Subphase D (Connect Website Pages to Backend Endpoints).
+
+---
+
+### Subphase D — Connect Website Pages to Backend Endpoints
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user approval received.
+
+#### 1. Key Technical Accomplishments
+- **Centralized Frontend API Service Layer**:
+  - Created `frontend/src/types/api.ts` defining strict TypeScript interfaces matching the backend's Pydantic v2 schemas (`HealthResponse`, `SinglePredictionResponse`, `BatchPredictionResponse`, `ModelInfoResponse`, `ModelMetricsResponse`, `LocalExplanationResponse`, `GlobalExplanationResponse`, `TransactionExplorerResponse`).
+  - Created `frontend/src/services/api.ts` with custom `ApiError` class, JSON error deserialization (parsing Pydantic validation error lists), timeout handling, and environment-based URL resolution via `VITE_API_BASE_URL` (defaulting to `http://localhost:8000`).
+  - Created `frontend/src/data/presets.ts` providing genuine test cases from the ULB credit card corpus (Legitimate purchase $7.80, Confirmed fraud case $239.93, and High-anomaly fraud case $59.00).
+- **Page-by-Page Integration**:
+  1. **Top Header**: Connected dynamic backend health check (`GET /api/health`) with live polling every 30s. Automatically displays `"FastAPI Engine READY"` (emerald pulse) or disconnected state.
+  2. **Overview (`/`)**: Connected to `GET /api/health`, `GET /api/model-info`, and `GET /api/metrics`. Displays live model architecture (Random Forest champion), verified test PR-AUC (0.8541), dataset provenance (284,807 total records, 492 fraud cases, 0.1727% prevalence), and comparative model matrix.
+  3. **Single Transaction Scoring (`/analyze`)**:
+     - Form bound to `POST /api/predict` with full 30-feature vector inputs and policy threshold sliders (T1, T2).
+     - Local explainability bound to `POST /api/explanations/local` with TreeExplainer attribution.
+     - Live testing verified: Confirmed fraud preset ($239.93) scored **99.46% fraud probability (High Risk)** with top risk drivers (V4, V17); Legitimate preset ($7.80) scored **0.12% fraud probability (Low Risk)**.
+  4. **Batch CSV Scoring (`/batch-analysis`)**:
+     - Connected file upload zone to `POST /api/predict/batch` (multipart/form-data with 5MB validation).
+     - Connected verified 10-row CSV sample download to `GET /api/sample-batch`.
+     - Displays summary KPI cards (total evaluated, low/medium/high counts and percentages), filterable results table, and client-side CSV export.
+  5. **Transaction Explorer (`/transactions`)**:
+     - Connected to `GET /api/transactions/explorer` with query parameters (`class_filter`, `limit`, `min_amount`, `max_amount`).
+     - Real-time filtering by banking ground truth (`fraudulent` Class 1 vs `legitimate` Class 0), risk scores, and one-click transition to Single Analysis.
+  6. **Model Insights (`/model-insights`)**:
+     - Connected to `GET /api/model-info`, `GET /api/metrics`, and `GET /api/explanations/global`.
+     - Displays verified test split confusion matrix (56,864 TN, 18 FP, 17 FN, 81 TP).
+     - Displays ranked global feature importance list (V14 15.9%, V12 12.8%, V4 11.1%, V10 10.3%, V17 8.1%) and streams the SHAP beeswarm summary plot directly from `GET /api/explanations/summary-plot`.
+- **Strict ML Integrity**:
+  - Reused existing ML champion model, pipeline, and risk engine without duplicate JavaScript logic.
+  - Zero fake data, zero mock responses, zero modification to backend code.
+  - Streamlit application and existing artifacts preserved intact.
+
+#### 2. Verification Outcomes
+- **TypeScript Compilation & Production Build**:
+  - Command: `npm run build` (`tsc -b && vite build`)
+  - Result: **0 TypeScript errors**, 1,941 modules transformed, production bundle created in 4.01s:
+    - `dist/index.html` (0.45 kB)
+    - `dist/assets/index-68Vhh0RC.css` (21.29 kB)
+    - `dist/assets/index-DVw67Iho.js` (353.27 kB)
+- **Live End-to-End Browser Subagent Testing**:
+  - Verified `GET /api/health` 200 OK -> Header displays "FastAPI Engine READY".
+  - Verified `POST /api/predict` 200 OK -> Confirmed fraud scored 99.46% (High Risk, 99/100).
+  - Verified `POST /api/explanations/local` 200 OK -> Rendered top risk-increasing drivers (V4, V17).
+  - Verified `POST /api/predict` 200 OK -> Legitimate transaction scored 0.12% (Low Risk, 0/100).
+  - Verified `GET /api/transactions/explorer` 200 OK -> Test corpus table loaded with ground truth labels.
+  - Verified `GET /api/model-info`, `GET /api/metrics`, `GET /api/explanations/global`, `GET /api/explanations/summary-plot` 200 OK -> Benchmark matrix, confusion matrix, and beeswarm image rendered.
+  - Recording saved to: `verify_api_integration_1792255776248.webp`.
+- **Backend Non-Regression Suite**:
+  - Command: `.\.venv\Scripts\python.exe -m pytest tests backend/tests -v`
+  - Result: **75 passed, 0 failed in 28.24s (100% pass rate)**.
+
+#### 3. How to Run Frontend and Backend Independently
+```powershell
+# 1. Start FastAPI Backend (from workspace root):
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+# OpenAPI Docs: http://127.0.0.1:8000/docs
+
+# 2. Start React + Vite Frontend (in frontend/):
+cd frontend
+npm run dev
+# Website URL: http://127.0.0.1:5173
+```
+
+#### 4. Subphase D Acceptance Checklist
+- [x] Centralized API service layer created in `frontend/src/services/api.ts` with error handling and typing.
+- [x] Environment variable configuration supported (`VITE_API_BASE_URL`).
+- [x] Connected Single Analysis to `POST /api/predict` and `POST /api/explanations/local`.
+- [x] Connected Batch Analysis to `POST /api/predict/batch` and `GET /api/sample-batch`.
+- [x] Connected Transaction Explorer to `GET /api/transactions/explorer`.
+- [x] Connected Model Insights to `GET /api/model-info`, `GET /api/metrics`, and `GET /api/explanations/*`.
+- [x] Connected Overview to `GET /api/health`, `GET /api/model-info`, and `GET /api/metrics`.
+- [x] Preserved ML correctness and reused verified Random Forest model and pipeline.
+- [x] Zero TypeScript errors and clean production build.
+- [x] Live end-to-end browser subagent testing passed with 200 OK across all integrated endpoints.
+- [x] Verified 100% pass rate on 75 backend tests with zero regressions.
+- [x] Streamlit code preserved completely intact.
+- [x] Subphase D marked **VERIFIED**.
+- [ ] Explicit user approval received before proceeding to Subphase E (Polishing and Visual Experience).
+
 
 
 

@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 0 Verified | Phase 1 Blocked (Awaiting Real Dataset Placement)
+- **Overall Status**: Phase 1 Complete & Verified — Awaiting Approval for Phase 2
 
 ---
 
@@ -18,7 +18,7 @@ Authoritative single source of truth for project execution status, technical dec
 | Phase | Description | Status | Approval Received |
 |---|---|---|---|
 | **Phase 0** | Workspace, Environment, and Repository Setup | **VERIFIED** | Yes (Approved) |
-| **Phase 1** | Data Validation and Exploratory Data Analysis | **BLOCKED** (Dataset Required) | In Progress |
+| **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Awaiting Approval to proceed to Phase 2 |
 | **Phase 2** | Preprocessing and Experimental Design | NOT STARTED | Pending |
 | **Phase 3** | Logistic Regression Baseline | NOT STARTED | Pending |
 | **Phase 4** | Imbalance Handling Experiments | NOT STARTED | Pending |
@@ -43,83 +43,64 @@ Authoritative single source of truth for project execution status, technical dec
 ---
 
 ### Phase 1 — Data Validation and Exploratory Data Analysis
-- **Status**: **BLOCKED** (Awaiting Dataset Placement)
-- **Current Milestone**: Implementation & Automated Validation Complete; Actual Dataset Analysis Blocked
+- **Status**: **VERIFIED**
+- **Date Completed**: 2026-10-17
 
 #### 1. Tasks Completed
-- Checked for `data/creditcard.csv` in workspace, Desktop, and Downloads. Confirmed the dataset is not yet present.
-- In strict adherence to **Rule D (No fabricated evidence)**, avoided generating dummy/synthetic CSV data or fabricating metrics.
-- Installed Phase 1 dependencies in `.venv`: `pandas`, `numpy`, `matplotlib`, `seaborn`, `ipykernel`, `nbconvert`, and dependencies.
-- Updated `requirements.txt` with exact pinned versions for all installed packages.
-- Implemented defensive validation module `src/data_validation.py`:
-  - `check_dataset_exists()`: Validates file presence and non-zero size with friendly error messages.
-  - `validate_schema()`: Validates all 31 columns (`Time`, `V1`–`V28`, `Amount`, `Class`), order, and unexpected columns.
-  - `validate_data_types_and_values()`: Validates numeric dtypes, absence of nulls/NaNs, absence of infinities, and validates binary target values `{0, 1}`.
-  - `inspect_duplicates()`: Audits duplicate rows and duplicate class distribution without mutating or dropping records.
-  - `calculate_class_distribution()`: Calculates exact counts, percentages, and imbalance ratio from actual data.
-  - `load_and_validate_dataset()`: End-to-end defensive loader returning DataFrame and validation report.
-- Implemented comprehensive automated test suite in `tests/test_data_validation.py` (9 tests covering missing file handling, schema mismatches, non-numeric values, nulls/infs, non-binary targets, duplicate detection, and class distributions).
-- Executed automated tests using `pytest` — 13 passed in 1.52s (100% pass rate).
-- Created `notebooks/01_eda.ipynb` containing 16 cells:
-  - Defensive dataset loading and schema validation.
-  - Class imbalance breakdown and deep dive into why accuracy fails.
-  - Duplicate audit and explanation of credit card retry patterns.
-  - Transaction amount distribution (log-scale box plots & KDE).
-  - Transaction time density across 48 hours.
-  - PCA features correlation analysis with `Class`.
-  - Architectural implications for Phase 2 (preprocessing & leakage prevention).
-- Programmatically executed `notebooks/01_eda.ipynb` using `nbconvert` to confirm that all cells, error traps, and logic run end-to-end without unhandled exceptions.
+- Dataset placed in `data/creditcard.csv` (150,828,752 bytes).
+- Implemented defensive validation module `src/data_validation.py` for schema verification, missing/inf detection, non-destructive duplicate auditing, binary domain checks, and class distribution calculation.
+- Automated unit test suite `tests/test_data_validation.py` passing (13/13 unit tests passed in 1.81s).
+- Created `notebooks/01_eda.ipynb` containing 16 cells for deep exploratory data analysis, class imbalance math, outlier inspection, amount/time distributions, and PCA correlation analysis.
+- Executed `notebooks/01_eda.ipynb` inplace with `nbconvert` on the live dataset; all charts and statistical outputs rendered successfully without unhandled errors.
+- Extracted and recorded actual, non-fabricated dataset statistics directly from execution.
 
-#### 2. Files Created / Modified
-- `src/data_validation.py`: Defensive data validation module.
-- `tests/test_data_validation.py`: Unit test suite for validation functions.
-- `notebooks/01_eda.ipynb`: Exploratory Data Analysis notebook.
-- `requirements.txt`: Updated with verified Phase 1 dependencies.
-- `PROJECT_PROGRESS.md`: Updated with Phase 0 verification and Phase 1 blocked state.
+#### 2. Actual Verified Dataset Statistics
+- **Dataset Dimensions**: 284,807 rows x 31 columns.
+- **Missing / Infinite Values**: 0 nulls, 0 NaNs, 0 infinities across all columns.
+- **Target Domain (`Class`)**: Strictly binary `{0, 1}`.
+- **Legitimate Transactions (Class 0)**: 284,315 records (**99.8273%**).
+- **Fraudulent Transactions (Class 1)**: 492 records (**0.1727%**).
+- **Class Imbalance Ratio**: **577.88 : 1** (1 fraudulent transaction per ~578 legitimate transactions).
+- **Duplicate Records Audited**:
+  - Total Duplicates: 1,081 rows (0.3796% of dataset).
+  - Class 0 (Legitimate) Duplicates: 1,062 rows.
+  - Class 1 (Fraudulent) Duplicates: 19 rows.
+  - *Decision*: Preserved in raw dataset without deletion (avoiding data loss and reflecting realistic transaction retry streams).
+- **Transaction Amount ($) Distribution**:
+  - Legitimate (Class 0): Mean = $88.29 | Median = $22.00 | 25% = $5.65 | 75% = $77.05 | Max = $25,691.16 | Std = $250.11
+  - Fraudulent (Class 1): Mean = $122.21 | Median = $9.25 | 25% = $1.00 | 75% = $105.89 | Max = $2,125.87 | Std = $256.68
+  - *Insight*: Fraudulent transactions have a **lower median** ($9.25) than legitimate transactions ($22.00). Fraud is not merely high-dollar purchases; micro-testing amounts ($1.00) are common.
+- **Time Distribution**:
+  - Range: 0.0 to 172,792.0 seconds (~47.99 hours / 2 days).
+  - Temporal cyclical density observed over the 48-hour recording window.
+- **Top Correlations with Class**:
+  - Negative: `V17` (-0.3265), `V14` (-0.3025), `V12` (-0.2606), `V10` (-0.2169), `V16` (-0.1965)
+  - Positive: `V11` (+0.1549), `V4` (+0.1334), `V2` (+0.0913), `V21` (+0.0404), `V19` (+0.0348)
 
-#### 3. Commands Executed & Verified Outcomes
-- `.\.venv\Scripts\python.exe -m pip install pandas numpy matplotlib seaborn ipykernel nbconvert`
-  - Output: Successfully installed packages without conflicts (Verified).
-- `.\.venv\Scripts\python.exe -m pytest tests/ -v`
-  - Output: 13 passed in 1.52s (Verified).
-- `.\.venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --output test_executed.ipynb`
-  - Output: Execution succeeded without unhandled errors (Verified).
+#### 3. Files Created / Modified
+- `src/data_validation.py`: Schema validation, missing value checking, duplicate audit, and class distribution utilities.
+- `tests/test_data_validation.py`: 9 unit tests for schema, types, missing values, duplicates, and distributions.
+- `notebooks/01_eda.ipynb`: Fully executed exploratory analysis notebook with rendered visualizations.
+- `requirements.txt`: Pinned versions for `pandas`, `numpy`, `matplotlib`, `seaborn`, `ipykernel`, `nbconvert`, and dependencies.
+- `PROJECT_PROGRESS.md`: Authoritative progress tracking updated with verified statistics.
 
 #### 4. Automated Tests Run & Results
-- Total Tests: 13 (4 config tests + 9 data validation tests)
-- `tests/test_config.py::test_project_root_exists` -> **PASSED**
-- `tests/test_config.py::test_core_directories_defined` -> **PASSED**
-- `tests/test_config.py::test_schema_definitions` -> **PASSED**
-- `tests/test_config.py::test_default_thresholds` -> **PASSED**
-- `tests/test_data_validation.py::test_check_dataset_exists_raises_on_missing_file` -> **PASSED**
-- `tests/test_data_validation.py::test_check_dataset_exists_raises_on_empty_file` -> **PASSED**
-- `tests/test_data_validation.py::test_validate_schema_success` -> **PASSED**
-- `tests/test_data_validation.py::test_validate_schema_raises_on_missing_column` -> **PASSED**
-- `tests/test_data_validation.py::test_validate_data_types_raises_on_non_numeric` -> **PASSED**
-- `tests/test_data_validation.py::test_validate_data_types_detects_nulls_and_infs` -> **PASSED**
-- `tests/test_data_validation.py::test_validate_data_types_raises_on_non_binary_target` -> **PASSED**
-- `tests/test_data_validation.py::test_inspect_duplicates` -> **PASSED**
-- `tests/test_data_validation.py::test_calculate_class_distribution` -> **PASSED**
-- Result: **13 passed, 0 failed in 1.52s**.
+- Command: `.\.venv\Scripts\python.exe -m pytest tests/ -v`
+- Results: 13 passed, 0 failed in 1.81s (100% pass rate).
 
-#### 5. Unresolved Issues & Blockers
-- **Blocker**: The real ULB dataset file `data/creditcard.csv` is not yet placed in the repository.
-- As required by Rule D, Phase 1 cannot be marked `VERIFIED` and Phase 2 cannot begin until the real dataset is placed and actual numerical statistics are calculated from execution.
+#### 5. Technical Decisions & Architectural Takeaways for Phase 2
+- **Why Accuracy Fails**: A trivial baseline predicting Class 0 achieves 99.83% accuracy but 0.0% recall, missing all $60,000+ of fraud. Optimization must prioritize **PR-AUC, Recall, and Precision**.
+- **Preprocessing Protocol**: `Amount` and `Time` have wide scales and heavy outliers, requiring robust scaling (`RobustScaler`), whereas PCA features `V1`–`V28` are already zero-centered.
+- **Leakage Prevention**: All transformations must be fit strictly on training splits. Stratified train/test splitting is required to prevent fold-to-fold class skew.
 
-#### 6. Next Steps to Unblock Phase 1
-1. User downloads `creditcard.csv` from [Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud).
-2. User places `creditcard.csv` into `data/creditcard.csv`.
-3. Re-run `01_eda.ipynb` against real data, extract actual numbers (exact counts, percentages, duplicate count, correlation rankings), update `PROJECT_PROGRESS.md`, and verify Phase 1.
-
-#### 7. Phase 1 Acceptance Checklist
+#### 6. Phase 1 Acceptance Checklist
 - [x] Verified Phase 0 completion and confirmed clean environment state.
-- [x] Inspected workspace, Desktop, and Downloads for `data/creditcard.csv`.
-- [x] Identified missing dataset without fabricating data or reporting fictitious stats.
-- [x] Provided clear download and placement instructions.
-- [x] Implemented schema, type, missing value, and duplicate validation in `src/data_validation.py`.
-- [x] Implemented automated unit tests in `tests/test_data_validation.py` (100% pass rate).
-- [x] Created `notebooks/01_eda.ipynb` with complete markdown explanations, data loading, class imbalance analysis, amount/time visualizations, and correlation logic.
-- [x] Verified `notebooks/01_eda.ipynb` executes end-to-end without unhandled exceptions.
-- [ ] Real dataset `data/creditcard.csv` placed by user.
-- [ ] Actual dataset metrics calculated and recorded from execution.
-- [ ] Phase 1 marked `VERIFIED` upon successful execution on real data.
+- [x] Dataset `data/creditcard.csv` validated (284,807 rows, 31 columns, 0 nulls).
+- [x] Actual dataset statistics calculated from execution without fabrication.
+- [x] Duplicate records audited and documented without mutating raw data.
+- [x] Defensive validation module implemented in `src/data_validation.py`.
+- [x] Unit test suite implemented in `tests/test_data_validation.py` (13/13 passed).
+- [x] `notebooks/01_eda.ipynb` executed end-to-end inplace with complete visualizations.
+- [x] Why accuracy is deceptive in fraud detection fully documented.
+- [x] Phase 1 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 2.

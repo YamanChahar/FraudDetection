@@ -44,6 +44,7 @@ Fraud_Detection/
 ├── tests/
 │   ├── __init__.py
 │   ├── test_config.py          # Configuration and path validation tests
+│   ├── test_dashboard.py       # Streamlit AppTest and dashboard verification
 │   ├── test_data_validation.py # Data validation tests
 │   ├── test_preprocessing.py   # Leakage prevention & pipeline tests
 │   ├── test_risk_engine.py     # Threshold and risk score boundary tests
@@ -86,7 +87,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 4: Run Initial Automated Tests
+### Step 4: Run Automated Tests
 ```bash
 pytest tests/ -v
 ```
@@ -109,19 +110,42 @@ This project is built on the **ULB Credit Card Fraud Detection** dataset (284,80
 
 ---
 
-## 5. Development Phases
+## 5. Launching the Interactive Streamlit Dashboard
 
-- **Phase 0**: Workspace, Environment, and Repository Setup *(Current)*
-- **Phase 1**: Data Validation and Exploratory Data Analysis
-- **Phase 2**: Preprocessing and Experimental Design
-- **Phase 3**: Logistic Regression Baseline
-- **Phase 4**: Imbalance Handling Experiments (Class Weighting vs. SMOTE)
-- **Phase 5**: Model Comparison and Selection (Logistic Regression, Random Forest, XGBoost)
-- **Phase 6**: Risk Scoring Engine & Prediction Interface
-- **Phase 7**: Interactive Streamlit Dashboard
-- **Phase 8**: Model Explainability (SHAP)
-- **Phase 9**: Comprehensive Quality Assurance & Reliability Tests
-- **Phase 10**: Deployment and Portfolio Preparation
-- **Phase 11**: Final Review and Interview Readiness
+Launch the fintech risk assessment dashboard:
+```bash
+# Using Python runner or Streamlit CLI:
+streamlit run app.py
+```
+Or via virtual environment Python:
+```bash
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+### Dashboard Sections
+1. **Executive Overview**: Real-time KPI cards (test volume, recall, precision, PR-AUC), test confusion matrix, and operational tier breakdown.
+2. **Single Transaction Scoring**: Real-time form with quick-fill presets from real dataset samples (legitimate vs. fraud), manual parameter inputs across all 30 canonical features (`Time`, `V1`–`V28`, `Amount`), and threshold-driven risk scoring.
+3. **Batch CSV Analysis**: High-throughput file upload, strict schema validation, batch risk scoring, category filtering, and exportable CSV download. A 10-row sample CSV is provided in `data/sample_batch_transactions.csv`.
+4. **Model Performance & Benchmarks**: Test set evaluation matrix across Logistic Regression, Random Forest, and XGBoost, Precision-Recall curves, and architectural trade-off analysis.
+5. **Transaction Explorer**: Interactive browsing of historical transactions filtered by ground truth label, amount ranges, and real-time model scoring.
+6. **Governance & Limitations**: Model card, dataset constraints, probability calibration notes, and financial regulatory disclaimer.
+
+---
+
+## 6. Development Phases
+
+- **Phase 0**: Workspace, Environment, and Repository Setup — **[VERIFIED]**
+- **Phase 1**: Data Validation and Exploratory Data Analysis — **[VERIFIED]**
+- **Phase 2**: Preprocessing and Experimental Design — **[VERIFIED]**
+- **Phase 3**: Logistic Regression Baseline — **[VERIFIED]**
+- **Phase 4**: Imbalance Handling Experiments (Class Weighting vs. SMOTE) — **[VERIFIED]**
+- **Phase 5**: Model Comparison and Selection (Champion: Random Forest, PR-AUC 0.8462) — **[VERIFIED]**
+- **Phase 6**: Risk Scoring Engine & Prediction Interface — **[VERIFIED]**
+- **Phase 7**: Interactive Streamlit Dashboard — **[VERIFIED]**
+- **Phase 8**: Model Explainability (SHAP) — *[Pending]*
+- **Phase 9**: Comprehensive Quality Assurance & Reliability Tests — *[Pending]*
+- **Phase 10**: Deployment and Portfolio Preparation — *[Pending]*
+- **Phase 11**: Final Review and Interview Readiness — *[Pending]*
 
 Consult `PROJECT_PROGRESS.md` for real-time phase execution logs and verified metrics.
+

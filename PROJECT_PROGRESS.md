@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 0 Complete — Awaiting Approval for Phase 1
+- **Overall Status**: Phase 0 Verified | Phase 1 Blocked (Awaiting Real Dataset Placement)
 
 ---
 
@@ -17,8 +17,8 @@ Authoritative single source of truth for project execution status, technical dec
 
 | Phase | Description | Status | Approval Received |
 |---|---|---|---|
-| **Phase 0** | Workspace, Environment, and Repository Setup | **AWAITING APPROVAL** | Pending |
-| **Phase 1** | Data Validation and Exploratory Data Analysis | NOT STARTED | Pending |
+| **Phase 0** | Workspace, Environment, and Repository Setup | **VERIFIED** | Yes (Approved) |
+| **Phase 1** | Data Validation and Exploratory Data Analysis | **BLOCKED** (Dataset Required) | In Progress |
 | **Phase 2** | Preprocessing and Experimental Design | NOT STARTED | Pending |
 | **Phase 3** | Logistic Regression Baseline | NOT STARTED | Pending |
 | **Phase 4** | Imbalance Handling Experiments | NOT STARTED | Pending |
@@ -35,94 +35,91 @@ Authoritative single source of truth for project execution status, technical dec
 ## Detailed Phase Logs
 
 ### Phase 0 — Workspace, Environment, and Repository Setup
-- **Status**: **AWAITING APPROVAL**
+- **Status**: **VERIFIED**
 - **Date Completed**: 2026-10-17
-
-#### 1. Tasks Completed
-- Inspected workspace directory (`c:\Users\Yaman Chahar\Desktop\Fraud_Detection`) — verified empty before setup.
-- Inspected execution environment: Python 3.13.1 and Git 2.55.0.windows.2 verified.
-- Created isolated virtual environment (`.venv`).
-- Initialized local Git repository (`git init`).
-- Created standardized directory layout (`data/`, `notebooks/`, `src/`, `models/`, `reports/`, `tests/`, `.streamlit/`).
-- Added strict `.gitignore` protecting `.venv/`, datasets, model artifacts, caches, and secrets.
-- Created `data/.gitkeep`, `models/.gitkeep`, `reports/.gitkeep` for version control tracking of folder layout.
-- Added dataset download and schema instructions in `data/README.md`.
-- Implemented single source of truth configuration module in `src/config.py` and `src/__init__.py`.
-- Installed and pinned Phase 0 testing dependencies (`pytest==9.1.1` and its dependencies) in `.venv`.
-- Generated initial `requirements.txt` reflecting exact installed dependencies.
-- Configured `.streamlit/config.toml` with accessible dark fintech theme.
-- Implemented automated configuration unit tests in `tests/test_config.py`.
-- Executed automated tests using `.venv\Scripts\python.exe -m pytest tests/ -v`.
-- Initialized documentation in `README.md` and `PROJECT_PROGRESS.md`.
-
-#### 2. Files Created / Modified
-- `.gitignore`: Ignore `.venv/`, datasets, bytecode, models, reports, and secrets.
-- `.gitkeep`: Created in `data/`, `models/`, and `reports/`.
-- `data/README.md`: Instructions for obtaining and placing `creditcard.csv`.
-- `src/__init__.py`: Package initialization.
-- `src/config.py`: Centralized configuration, filesystem paths, schema constants, and thresholds.
-- `tests/__init__.py`: Test package initialization.
-- `tests/test_config.py`: Unit tests for paths, directory structure, schemas, and thresholds.
-- `requirements.txt`: Initial dependency manifest with exact pinned versions.
-- `.streamlit/config.toml`: Streamlit server and theme configuration.
-- `README.md`: Comprehensive setup guide and architecture overview.
-- `PROJECT_PROGRESS.md`: Single source of truth progress tracking file.
-
-#### 3. Commands Executed & Verified Outcomes
-- `python --version; git --version`
-  - Output: `Python 3.13.1`, `git version 2.55.0.windows.2` (Verified)
-- `python -m venv .venv`
-  - Exit Code: 0 (Verified `.venv` created)
-- `.\.venv\Scripts\python.exe -m pip --version`
-  - Output: `pip 24.3.1 from C:\Users\Yaman Chahar\Desktop\Fraud_Detection\.venv\Lib\site-packages\pip (python 3.13)` (Verified)
-- `git init`
-  - Output: `Initialized empty Git repository in C:/Users/Yaman Chahar/Desktop/Fraud_Detection/.git/` (Verified)
-- `.\.venv\Scripts\python.exe -m pip install pytest`
-  - Exit Code: 0 (Installed pytest 9.1.1 and dependencies into `.venv`)
-- `.\.venv\Scripts\python.exe -m pytest tests/ -v`
-  - Exit Code: 0 (4 passed in 0.13s) (Verified)
-- `.\.venv\Scripts\python.exe -m pip freeze`
-  - Recorded exact pinned versions to `requirements.txt` (Verified)
-
-#### 4. Automated Tests Run & Results
-- Command: `.\.venv\Scripts\python.exe -m pytest tests/ -v`
-- Results:
-  - `tests/test_config.py::test_project_root_exists` -> **PASSED**
-  - `tests/test_config.py::test_core_directories_defined` -> **PASSED**
-  - `tests/test_config.py::test_schema_definitions` -> **PASSED**
-  - `tests/test_config.py::test_default_thresholds` -> **PASSED**
-- Summary: 4 passed, 0 failed in 0.13s.
-
-#### 5. Technical Decisions & Rationale
-- **Isolated Virtual Environment (`.venv`)**: Kept local to avoid modifying system Python installations and ensuring dependency reproducibility.
-- **Strict `.gitignore` Before First Commit**: Prevented `.venv/` and datasets from being tracked in Git.
-- **Centralized `src/config.py`**: All directory paths use `pathlib.Path` relative to project root, eliminating hardcoded absolute paths and ensuring cross-platform portability.
-- **Dataset Path Configurable via Environment Variable**: `FRAUD_DATASET_PATH` allows testing with custom locations without code modification.
-- **Progressive Dependency Installation**: In accordance with project rules, libraries are installed only as needed per phase to prevent dependency bloat and version conflicts.
-
-#### 6. Known Issues / Blockers
-- **Dataset Not Present**: `data/creditcard.csv` has not yet been downloaded. In accordance with Rule D (No fabricated evidence) and the Dataset Contract, Phase 1 requires the user to place `creditcard.csv` into `data/`.
-
-#### 7. Phase 0 Acceptance Checklist
-- [x] Workspace inspected and verified empty before implementation.
-- [x] Python (3.13.1) and Git (2.55.0.windows.2) verified available.
-- [x] Virtual environment (`.venv`) created and verified with pip.
-- [x] Project directory structure established (`data/`, `notebooks/`, `src/`, `models/`, `reports/`, `tests/`, `.streamlit/`).
-- [x] `.gitignore` created and verified ignoring `.venv/`, datasets, model artifacts, and caches.
-- [x] Git repository initialized (`git init`).
-- [x] Configuration module `src/config.py` implemented with portable paths and schema definitions.
-- [x] Initial `requirements.txt` created with exact verified versions.
-- [x] Initial `README.md` and `PROJECT_PROGRESS.md` created.
-- [x] Automated tests implemented (`tests/test_config.py`) and verified passing (4/4 passed).
-- [ ] User approval received for Phase 0 completion.
+- **Approval Received**: Explicit approval received from user.
+- **Summary**: Environment initialized, Git repository setup with strict `.gitignore`, portable `src/config.py`, and baseline test suite passing.
 
 ---
 
 ### Phase 1 — Data Validation and Exploratory Data Analysis
-- **Status**: **NOT STARTED**
-- **Prerequisite**: User places `creditcard.csv` into `data/` directory.
-- **Planned Tasks**:
-  - Install Phase 1 dependencies (`pandas`, `numpy`, `matplotlib`, `seaborn`, `ipykernel`).
-  - Implement dataset validation functions (`src/data_validation.py`).
-  - Create exploratory data analysis notebook (`notebooks/01_eda.ipynb`).
-  - Run EDA end-to-end and document exact dataset statistics without fabrication.
+- **Status**: **BLOCKED** (Awaiting Dataset Placement)
+- **Current Milestone**: Implementation & Automated Validation Complete; Actual Dataset Analysis Blocked
+
+#### 1. Tasks Completed
+- Checked for `data/creditcard.csv` in workspace, Desktop, and Downloads. Confirmed the dataset is not yet present.
+- In strict adherence to **Rule D (No fabricated evidence)**, avoided generating dummy/synthetic CSV data or fabricating metrics.
+- Installed Phase 1 dependencies in `.venv`: `pandas`, `numpy`, `matplotlib`, `seaborn`, `ipykernel`, `nbconvert`, and dependencies.
+- Updated `requirements.txt` with exact pinned versions for all installed packages.
+- Implemented defensive validation module `src/data_validation.py`:
+  - `check_dataset_exists()`: Validates file presence and non-zero size with friendly error messages.
+  - `validate_schema()`: Validates all 31 columns (`Time`, `V1`–`V28`, `Amount`, `Class`), order, and unexpected columns.
+  - `validate_data_types_and_values()`: Validates numeric dtypes, absence of nulls/NaNs, absence of infinities, and validates binary target values `{0, 1}`.
+  - `inspect_duplicates()`: Audits duplicate rows and duplicate class distribution without mutating or dropping records.
+  - `calculate_class_distribution()`: Calculates exact counts, percentages, and imbalance ratio from actual data.
+  - `load_and_validate_dataset()`: End-to-end defensive loader returning DataFrame and validation report.
+- Implemented comprehensive automated test suite in `tests/test_data_validation.py` (9 tests covering missing file handling, schema mismatches, non-numeric values, nulls/infs, non-binary targets, duplicate detection, and class distributions).
+- Executed automated tests using `pytest` — 13 passed in 1.52s (100% pass rate).
+- Created `notebooks/01_eda.ipynb` containing 16 cells:
+  - Defensive dataset loading and schema validation.
+  - Class imbalance breakdown and deep dive into why accuracy fails.
+  - Duplicate audit and explanation of credit card retry patterns.
+  - Transaction amount distribution (log-scale box plots & KDE).
+  - Transaction time density across 48 hours.
+  - PCA features correlation analysis with `Class`.
+  - Architectural implications for Phase 2 (preprocessing & leakage prevention).
+- Programmatically executed `notebooks/01_eda.ipynb` using `nbconvert` to confirm that all cells, error traps, and logic run end-to-end without unhandled exceptions.
+
+#### 2. Files Created / Modified
+- `src/data_validation.py`: Defensive data validation module.
+- `tests/test_data_validation.py`: Unit test suite for validation functions.
+- `notebooks/01_eda.ipynb`: Exploratory Data Analysis notebook.
+- `requirements.txt`: Updated with verified Phase 1 dependencies.
+- `PROJECT_PROGRESS.md`: Updated with Phase 0 verification and Phase 1 blocked state.
+
+#### 3. Commands Executed & Verified Outcomes
+- `.\.venv\Scripts\python.exe -m pip install pandas numpy matplotlib seaborn ipykernel nbconvert`
+  - Output: Successfully installed packages without conflicts (Verified).
+- `.\.venv\Scripts\python.exe -m pytest tests/ -v`
+  - Output: 13 passed in 1.52s (Verified).
+- `.\.venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --output test_executed.ipynb`
+  - Output: Execution succeeded without unhandled errors (Verified).
+
+#### 4. Automated Tests Run & Results
+- Total Tests: 13 (4 config tests + 9 data validation tests)
+- `tests/test_config.py::test_project_root_exists` -> **PASSED**
+- `tests/test_config.py::test_core_directories_defined` -> **PASSED**
+- `tests/test_config.py::test_schema_definitions` -> **PASSED**
+- `tests/test_config.py::test_default_thresholds` -> **PASSED**
+- `tests/test_data_validation.py::test_check_dataset_exists_raises_on_missing_file` -> **PASSED**
+- `tests/test_data_validation.py::test_check_dataset_exists_raises_on_empty_file` -> **PASSED**
+- `tests/test_data_validation.py::test_validate_schema_success` -> **PASSED**
+- `tests/test_data_validation.py::test_validate_schema_raises_on_missing_column` -> **PASSED**
+- `tests/test_data_validation.py::test_validate_data_types_raises_on_non_numeric` -> **PASSED**
+- `tests/test_data_validation.py::test_validate_data_types_detects_nulls_and_infs` -> **PASSED**
+- `tests/test_data_validation.py::test_validate_data_types_raises_on_non_binary_target` -> **PASSED**
+- `tests/test_data_validation.py::test_inspect_duplicates` -> **PASSED**
+- `tests/test_data_validation.py::test_calculate_class_distribution` -> **PASSED**
+- Result: **13 passed, 0 failed in 1.52s**.
+
+#### 5. Unresolved Issues & Blockers
+- **Blocker**: The real ULB dataset file `data/creditcard.csv` is not yet placed in the repository.
+- As required by Rule D, Phase 1 cannot be marked `VERIFIED` and Phase 2 cannot begin until the real dataset is placed and actual numerical statistics are calculated from execution.
+
+#### 6. Next Steps to Unblock Phase 1
+1. User downloads `creditcard.csv` from [Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud).
+2. User places `creditcard.csv` into `data/creditcard.csv`.
+3. Re-run `01_eda.ipynb` against real data, extract actual numbers (exact counts, percentages, duplicate count, correlation rankings), update `PROJECT_PROGRESS.md`, and verify Phase 1.
+
+#### 7. Phase 1 Acceptance Checklist
+- [x] Verified Phase 0 completion and confirmed clean environment state.
+- [x] Inspected workspace, Desktop, and Downloads for `data/creditcard.csv`.
+- [x] Identified missing dataset without fabricating data or reporting fictitious stats.
+- [x] Provided clear download and placement instructions.
+- [x] Implemented schema, type, missing value, and duplicate validation in `src/data_validation.py`.
+- [x] Implemented automated unit tests in `tests/test_data_validation.py` (100% pass rate).
+- [x] Created `notebooks/01_eda.ipynb` with complete markdown explanations, data loading, class imbalance analysis, amount/time visualizations, and correlation logic.
+- [x] Verified `notebooks/01_eda.ipynb` executes end-to-end without unhandled exceptions.
+- [ ] Real dataset `data/creditcard.csv` placed by user.
+- [ ] Actual dataset metrics calculated and recorded from execution.
+- [ ] Phase 1 marked `VERIFIED` upon successful execution on real data.

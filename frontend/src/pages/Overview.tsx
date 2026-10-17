@@ -6,8 +6,18 @@ import {
   ArrowUpRight,
   RefreshCw,
   AlertCircle,
+  BarChart3,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { api, ApiError } from "../services/api";
 import type {
   HealthResponse,
@@ -49,6 +59,16 @@ export const Overview: React.FC = () => {
     fetchOverviewData();
   }, []);
 
+  // Format benchmark data for Recharts
+  const chartData = metrics?.models
+    ? Object.entries(metrics.models).map(([name, vals]) => ({
+        name: name.replace("Classifier", "").trim(),
+        "PR-AUC": parseFloat(((vals.pr_auc || vals.average_precision || 0) * 100).toFixed(2)),
+        "ROC-AUC": parseFloat(((vals.roc_auc || 0) * 100).toFixed(2)),
+        "F1-Score": parseFloat(((vals.f1 || 0) * 100).toFixed(2)),
+      }))
+    : [];
+
   return (
     <div className="space-y-6">
       {/* Top Banner / Status Overview */}
@@ -56,7 +76,7 @@ export const Overview: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="badge-blue text-xs font-medium">Subphase D Connected</span>
+              <span className="badge-blue text-xs font-medium">Production Ready</span>
               <span className="badge-low text-xs font-medium">
                 Model: {health?.model_name || "Random Forest Champion"}
               </span>
@@ -71,7 +91,7 @@ export const Overview: React.FC = () => {
             <p className="text-navy-300 text-sm mt-1 max-w-2xl">
               High-throughput decision engine benchmarked on the ULB credit card fraud
               corpus. Calibrated for extreme class imbalance (0.172% positive fraud rate)
-              with three-tier operational risk tiering.
+              with three-tier operational risk policy and real-time SHAP explainability.
             </p>
           </div>
 
@@ -163,9 +183,9 @@ export const Overview: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid: Telemetry Cards & Planned Integration Placeholders */}
+      {/* Main Grid: Telemetry Cards & Interactive Visualizations */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 cols): System Overview & Quick Inspection */}
+        {/* Left Column (2 cols): Split Telemetry & Recharts Model Comparison */}
         <div className="lg:col-span-2 space-y-6">
           {/* Dataset Provenance & Split Telemetry */}
           <div className="card p-6">
@@ -220,75 +240,54 @@ export const Overview: React.FC = () => {
             </div>
           </div>
 
-          {/* Model Matrix */}
+          {/* Interactive Recharts Model Benchmark Visualizer */}
           <div className="card p-6">
             <div className="flex items-center justify-between pb-4 border-b border-navy-700/60 mb-5">
-              <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-accent-sky" />
                 <h2 className="text-base font-semibold text-white">
-                  Validated Model Benchmark Summary
+                  Model Benchmark Comparison (Test Split %)
                 </h2>
-                <p className="text-xs text-navy-400 mt-0.5">
-                  Phase 5 experimental comparison artifact metrics (live from /api/metrics)
-                </p>
               </div>
-              <span className="badge-blue text-xs font-mono">Backend Stream</span>
+              <span className="badge-blue text-xs font-mono">Phase 5 Matrix</span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-navy-700 text-navy-400 uppercase tracking-wider font-semibold">
-                    <th className="py-2.5 px-3">Model Architecture</th>
-                    <th className="py-2.5 px-3">AUCPR</th>
-                    <th className="py-2.5 px-3">ROCAUC</th>
-                    <th className="py-2.5 px-3">F1 Score</th>
-                    <th className="py-2.5 px-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-navy-800/80 text-navy-200">
-                  {metrics?.models ? (
-                    Object.entries(metrics.models).map(([name, vals]) => {
-                      const isChampion = name === metrics.selected_model.name;
-                      return (
-                        <tr key={name} className={isChampion ? "bg-accent-blue/5" : ""}>
-                          <td className="py-3 px-3 font-medium text-white flex items-center gap-2">
-                            {isChampion && <span className="w-2 h-2 rounded-full bg-risk-low" />}
-                            {name}
-                          </td>
-                          <td className="py-3 px-3 font-mono font-semibold text-accent-sky">
-                            {(vals.pr_auc || vals.average_precision || 0).toFixed(4)}
-                          </td>
-                          <td className="py-3 px-3 font-mono">{(vals.roc_auc || 0).toFixed(4)}</td>
-                          <td className="py-3 px-3 font-mono">{(vals.f1 || 0).toFixed(4)}</td>
-                          <td className="py-3 px-3">
-                            {isChampion ? (
-                              <span className="badge-low text-[11px]">Active Production</span>
-                            ) : (
-                              <span className="badge-neutral text-[11px]">Benchmark</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-4 text-center text-navy-400">
-                        Loading benchmark matrix...
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {chartData.length > 0 ? (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <XAxis dataKey="name" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={11} domain={[60, 100]} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#111827",
+                        borderColor: "#334155",
+                        borderRadius: "0.5rem",
+                        fontSize: "0.75rem",
+                        color: "#fff",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                    <Bar dataKey="PR-AUC" fill="#38BDF8" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ROC-AUC" fill="#10B981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="F1-Score" fill="#818CF8" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-xs text-navy-400">
+                Loading benchmark chart...
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column (1 col): System Architecture & Connectivity Status */}
+        {/* Right Column (1 col): System Architecture & Interactive Navigation */}
         <div className="space-y-6">
           <div className="card p-6">
             <h2 className="text-base font-semibold text-white mb-2">Service Topology</h2>
             <p className="text-xs text-navy-400 mb-4">
-              Live status from Subphase D backend connection.
+              Real-time service health verified across full-stack boundaries.
             </p>
 
             <div className="space-y-3">
@@ -296,7 +295,7 @@ export const Overview: React.FC = () => {
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-semibold text-white">FastAPI ML Backend</span>
                   <span
-                    className={`font-mono text-[11px] ${
+                    className={`font-mono text-[11px] font-semibold ${
                       health?.status === "healthy" ? "text-risk-low" : "text-risk-high"
                     }`}
                   >
@@ -311,7 +310,7 @@ export const Overview: React.FC = () => {
               <div className="p-3 rounded-lg bg-navy-850 border border-navy-700/60">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-semibold text-white">Vite React SPA</span>
-                  <span className="text-accent-sky font-mono text-[11px]">Online :5173</span>
+                  <span className="text-accent-sky font-mono text-[11px] font-semibold">Online :5173</span>
                 </div>
                 <p className="text-[11px] text-navy-400">
                   TypeScript, Tailwind CSS, React Router v7, Recharts.
@@ -321,7 +320,7 @@ export const Overview: React.FC = () => {
               <div className="p-3 rounded-lg bg-navy-850 border border-navy-700/60">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-semibold text-white">Active Model</span>
-                  <span className="text-accent-blue font-mono text-[11px]">
+                  <span className="text-accent-blue font-mono text-[11px] font-semibold">
                     {modelInfo?.feature_count || 30} Features
                   </span>
                 </div>
@@ -333,7 +332,7 @@ export const Overview: React.FC = () => {
           </div>
 
           <div className="card p-6">
-            <h2 className="text-base font-semibold text-white mb-2">Interactive Navigation</h2>
+            <h2 className="text-base font-semibold text-white mb-2">Operational Workflows</h2>
             <div className="space-y-2 text-xs">
               <Link
                 to="/analyze"

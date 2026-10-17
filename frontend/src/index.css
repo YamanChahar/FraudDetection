@@ -17,6 +17,12 @@ body {
   min-height: 100vh;
 }
 
+/* Accessible focus visible outlines for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #38BDF8 !important;
+  outline-offset: 2px !important;
+}
+
 /* Custom scrollbar for dark theme */
 ::-webkit-scrollbar {
   width: 6px;
@@ -41,6 +47,8 @@ body {
   background-color: #111827;
   border: 1px solid #1E293B;
   border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.15s ease-in-out;
 }
 
 .surface-card {
@@ -57,7 +65,7 @@ body {
 
 /* Accessible Risk Badges */
 .badge-low {
-  background-color: rgba(16, 185, 129, 0.12);
+  background-color: rgba(16, 185, 129, 0.14);
   color: #10B981;
   border: 1px solid rgba(16, 185, 129, 0.35);
   font-weight: 600;
@@ -65,12 +73,13 @@ body {
   padding: 0.2rem 0.65rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.025em;
 }
 
 .badge-medium {
-  background-color: rgba(245, 158, 11, 0.12);
+  background-color: rgba(245, 158, 11, 0.14);
   color: #F59E0B;
   border: 1px solid rgba(245, 158, 11, 0.35);
   font-weight: 600;
@@ -78,12 +87,13 @@ body {
   padding: 0.2rem 0.65rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.025em;
 }
 
 .badge-high {
-  background-color: rgba(239, 68, 68, 0.15);
+  background-color: rgba(239, 68, 68, 0.16);
   color: #EF4444;
   border: 1px solid rgba(239, 68, 68, 0.4);
   font-weight: 600;
@@ -91,12 +101,13 @@ body {
   padding: 0.2rem 0.65rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.025em;
 }
 
 .badge-blue {
-  background-color: rgba(56, 189, 248, 0.12);
+  background-color: rgba(56, 189, 248, 0.14);
   color: #38BDF8;
   border: 1px solid rgba(56, 189, 248, 0.35);
   font-weight: 600;
@@ -104,6 +115,7 @@ body {
   padding: 0.2rem 0.65rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
   letter-spacing: 0.025em;
 }
@@ -117,5 +129,29 @@ body {
   padding: 0.2rem 0.65rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   font-size: 0.78rem;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }

@@ -8,7 +8,17 @@ import {
   RefreshCw,
   AlertCircle,
   ShieldCheck,
+  Search,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { api, ApiError } from "../services/api";
 import type {
   ModelInfoResponse,
@@ -22,6 +32,7 @@ export const ModelInsights: React.FC = () => {
   const [globalShap, setGlobalShap] = useState<GlobalExplanationResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [featureSearch, setFeatureSearch] = useState<string>("");
 
   useEffect(() => {
     const fetchAllInsights = async () => {
@@ -49,6 +60,23 @@ export const ModelInsights: React.FC = () => {
 
     fetchAllInsights();
   }, []);
+
+  // Filter SHAP features
+  const filteredFeatures =
+    globalShap?.feature_importance.filter((item) => {
+      if (!featureSearch) return true;
+      return item.feature.toLowerCase().includes(featureSearch.toLowerCase());
+    }) || [];
+
+  // Chart data for model comparison
+  const comparisonChartData = metrics?.models
+    ? Object.entries(metrics.models).map(([name, vals]) => ({
+        name: name.replace("Classifier", "").trim(),
+        "PR-AUC": parseFloat(((vals.pr_auc || vals.average_precision || 0) * 100).toFixed(2)),
+        "ROC-AUC": parseFloat(((vals.roc_auc || 0) * 100).toFixed(2)),
+        Recall: parseFloat(((vals.recall || 0) * 100).toFixed(2)),
+      }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -81,7 +109,10 @@ export const ModelInsights: React.FC = () => {
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-lg bg-risk-high/15 border border-risk-high/40 text-risk-high text-xs flex items-start gap-2.5">
+        <div
+          role="alert"
+          className="p-4 rounded-lg bg-risk-high/15 border border-risk-high/40 text-risk-high text-xs flex items-start gap-2.5"
+        >
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <div>
             <strong className="block font-semibold">Metadata Error</strong>
@@ -207,6 +238,36 @@ export const ModelInsights: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mini Comparative Bar Chart */}
+              {comparisonChartData.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-navy-800">
+                  <span className="text-xs font-semibold text-white block mb-2">
+                    Comparative Performance Indices (%)
+                  </span>
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={comparisonChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#94A3B8" fontSize={10} domain={[60, 100]} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#111827",
+                            borderColor: "#334155",
+                            borderRadius: "0.375rem",
+                            fontSize: "0.75rem",
+                            color: "#fff",
+                          }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: "10px", paddingTop: "5px" }} />
+                        <Bar dataKey="PR-AUC" fill="#38BDF8" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="ROC-AUC" fill="#10B981" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="Recall" fill="#F59E0B" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Champion Confusion Matrix (5 cols) */}
@@ -216,7 +277,7 @@ export const ModelInsights: React.FC = () => {
                   <ShieldCheck className="w-5 h-5 text-accent-sky" />
                   <h2 className="text-base font-semibold text-white">Test Set Confusion Matrix</h2>
                 </div>
-                <span className="badge-blue text-xs font-mono">Default Threshold</span>
+                <span className="badge-blue text-xs font-mono">T = 0.50</span>
               </div>
 
               {metrics?.selected_model?.confusion_matrix ? (
@@ -280,17 +341,29 @@ export const ModelInsights: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Global Feature Ranking List (6 cols) */}
             <div className="lg:col-span-6 card p-6">
-              <div className="flex items-center justify-between pb-4 border-b border-navy-700/60 mb-5">
+              <div className="flex items-center justify-between pb-4 border-b border-navy-700/60 mb-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-accent-sky" />
                   <h2 className="text-base font-semibold text-white">Global Feature Importance</h2>
                 </div>
-                <span className="text-xs text-navy-400 font-mono">Top Predictors</span>
+                <span className="text-xs text-navy-400 font-mono">Mean |SHAP|</span>
               </div>
 
-              {globalShap?.feature_importance && globalShap.feature_importance.length > 0 ? (
-                <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-2">
-                  {globalShap.feature_importance.slice(0, 15).map((item) => (
+              {/* Search filter for features */}
+              <div className="relative mb-3">
+                <Search className="w-3.5 h-3.5 text-navy-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={featureSearch}
+                  onChange={(e) => setFeatureSearch(e.target.value)}
+                  placeholder="Filter features (e.g. V14, Amount)..."
+                  className="w-full bg-navy-850 border border-navy-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-accent-sky"
+                />
+              </div>
+
+              {filteredFeatures.length > 0 ? (
+                <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-2">
+                  {filteredFeatures.map((item) => (
                     <div
                       key={item.feature}
                       className="p-2.5 rounded-lg bg-navy-850 border border-navy-700/80"
@@ -320,7 +393,7 @@ export const ModelInsights: React.FC = () => {
                 </div>
               ) : (
                 <div className="h-44 flex items-center justify-center text-xs text-navy-400">
-                  Global importance report not available
+                  No features match "{featureSearch}"
                 </div>
               )}
             </div>
@@ -341,7 +414,6 @@ export const ModelInsights: React.FC = () => {
                   alt="Global SHAP Beeswarm Summary Plot"
                   className="w-full h-auto object-contain max-h-[460px]"
                   onError={(e) => {
-                    // Fallback notice if image fails to stream
                     (e.target as HTMLElement).style.display = "none";
                   }}
                 />

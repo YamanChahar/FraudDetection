@@ -42,6 +42,14 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-navy-900 text-white flex">
+      {/* Accessible Skip to Content Link */}
+      <a
+        href="#main-content"
+        className="sr-only sr-only-focusable fixed top-3 left-3 z-50 px-4 py-2 bg-accent-blue text-navy-950 font-bold rounded-lg shadow-lg border border-accent-sky"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -54,7 +62,11 @@ export const Layout: React.FC = () => {
         />
 
         {/* Page Content Viewport */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto focus:outline-none"
+        >
           <Outlet />
 
           {/* Persistent Regulatory Governance Footer */}
@@ -62,7 +74,7 @@ export const Layout: React.FC = () => {
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-accent-sky shrink-0" />
               <span>
-                <strong>Regulatory & Governance Notice:</strong> FraudLens is an
+                <strong>Regulatory &amp; Governance Notice:</strong> FraudLens is an
                 engineering prototype for portfolio research. It does not execute live banking clearance.
               </span>
             </div>

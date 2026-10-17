@@ -1,13 +1,20 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Sliders,
   ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
   BarChart2,
   AlertCircle,
   HelpCircle,
   RefreshCw,
   TrendingUp,
   TrendingDown,
+  Copy,
+  Check,
+  RotateCcw,
+  Info,
 } from "lucide-react";
 import { api, ApiError } from "../services/api";
 import { TRANSACTION_PRESETS } from "../data/presets";
@@ -19,11 +26,13 @@ import type {
 const PCA_FEATURE_NAMES = Array.from({ length: 28 }, (_, i) => `V${i + 1}`);
 
 export const SingleAnalysis: React.FC = () => {
-  // Initial state loaded with preset 0 (Legitimate sample)
-  const [selectedPresetId, setSelectedPresetId] = useState<string>("legit-sample-1");
-  const [features, setFeatures] = useState<Record<string, number>>(
-    TRANSACTION_PRESETS[0].features
-  );
+  const location = useLocation();
+  const initialFeatures = location.state?.features || TRANSACTION_PRESETS[0].features;
+  const initialPreset = location.state?.features ? "custom-explorer" : "legit-sample-1";
+
+  // Initial state loaded with preset 0 or features passed from Transaction Explorer
+  const [selectedPresetId, setSelectedPresetId] = useState<string>(initialPreset);
+  const [features, setFeatures] = useState<Record<string, number>>(initialFeatures);
 
   // Policy threshold overrides (defaults: 0.30 and 0.70)
   const [lowThreshold, setLowThreshold] = useState<number>(0.30);
@@ -35,6 +44,7 @@ export const SingleAnalysis: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<SinglePredictionResponse | null>(null);
   const [explanation, setExplanation] = useState<LocalExplanationResponse | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
 
   // Handle Preset Switching
   const handlePresetSelect = (presetId: string) => {
@@ -48,6 +58,13 @@ export const SingleAnalysis: React.FC = () => {
     }
   };
 
+  // Reset to default
+  const handleReset = () => {
+    handlePresetSelect("legit-sample-1");
+    setLowThreshold(0.30);
+    setHighThreshold(0.70);
+  };
+
   // Handle field change
   const handleFeatureChange = (featureName: string, value: string) => {
     const num = parseFloat(value);
@@ -57,9 +74,35 @@ export const SingleAnalysis: React.FC = () => {
     }));
   };
 
+  // Copy result summary to clipboard
+  const handleCopyResult = () => {
+    if (!prediction) return;
+    const summaryText = `FraudLens Analysis Report
+Model: ${prediction.model_name}
+Risk Category: ${prediction.risk_category}
+Fraud Probability: ${(prediction.fraud_probability * 100).toFixed(2)}%
+Risk Score: ${prediction.risk_score}/100
+Action: ${prediction.operational_recommendation}
+Thresholds: T1=${prediction.threshold_configuration.low_threshold}, T2=${prediction.threshold_configuration.high_threshold}`;
+    navigator.clipboard.writeText(summaryText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   // Submit scoring to backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    if (features.Amount < 0) {
+      setError("Transaction Amount cannot be negative.");
+      return;
+    }
+    if (features.Time < 0) {
+      setError("Elapsed Time cannot be negative.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -77,7 +120,6 @@ export const SingleAnalysis: React.FC = () => {
         setExplanation(expRes);
       } catch (expErr: any) {
         console.warn("Local SHAP explanation warning:", expErr);
-        // Explanation failure should not block core prediction display
       }
     } catch (err: any) {
       if (err instanceof ApiError) {
@@ -90,15 +132,30 @@ export const SingleAnalysis: React.FC = () => {
     }
   };
 
-  // Determine badge styling by risk category
+  // Accessible Risk Badges (combining color, icon, and explicit text)
   const getRiskBadge = (category: string) => {
     switch (category) {
       case "High Risk":
-        return <span className="badge-high text-xs">{category}</span>;
+        return (
+          <span className="badge-high text-xs font-bold" role="status">
+            <ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" />
+            HIGH RISK — DECLINE
+          </span>
+        );
       case "Medium Risk":
-        return <span className="badge-medium text-xs">{category}</span>;
+        return (
+          <span className="badge-medium text-xs font-bold" role="status">
+            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+            MEDIUM RISK — STEP-UP
+          </span>
+        );
       default:
-        return <span className="badge-low text-xs">{category}</span>;
+        return (
+          <span className="badge-low text-xs font-bold" role="status">
+            <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+            LOW RISK — APPROVED
+          </span>
+        );
     }
   };
 
@@ -117,17 +174,21 @@ export const SingleAnalysis: React.FC = () => {
               Single Transaction Risk Scoring
             </h1>
             <p className="text-navy-300 text-sm mt-1 max-w-2xl">
-              Inspect an individual transaction by choosing verified ULB presets or entering
-              canonical features. The Random Forest model outputs probability, applies
-              calibrated policy thresholds, and computes SHAP decision drivers.
+              Inspect an individual transaction by choosing verified ULB presets, loading from
+              the explorer, or entering canonical features. The Random Forest model outputs probability,
+              applies calibrated policy thresholds, and computes SHAP decision drivers.
             </p>
           </div>
 
           <div className="shrink-0 flex items-center gap-2">
-            <span className="badge-low text-xs font-mono px-3 py-1.5 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-risk-low animate-pulse" />
-              Live Endpoint Connected
-            </span>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-3 py-1.5 bg-navy-800 hover:bg-navy-750 text-navy-300 hover:text-white rounded-lg text-xs font-medium border border-navy-700 flex items-center gap-1.5 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Inputs
+            </button>
           </div>
         </div>
       </div>
@@ -135,7 +196,7 @@ export const SingleAnalysis: React.FC = () => {
       {/* Preset Selector Bar */}
       <div className="card p-4">
         <div className="text-xs font-semibold text-navy-400 uppercase tracking-wider mb-2.5">
-          Select Verified Evaluation Preset
+          Select Verified Evaluation Preset or Explorer Transaction
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {TRANSACTION_PRESETS.map((preset) => (
@@ -145,7 +206,7 @@ export const SingleAnalysis: React.FC = () => {
               onClick={() => handlePresetSelect(preset.id)}
               className={`p-3 rounded-lg text-left transition-all border ${
                 selectedPresetId === preset.id
-                  ? "bg-accent-blue/15 border-accent-blue text-white shadow-sm"
+                  ? "bg-accent-blue/15 border-accent-blue text-white shadow-sm ring-1 ring-accent-blue"
                   : "bg-navy-850 hover:bg-navy-800 border-navy-700 text-navy-300"
               }`}
             >
@@ -171,10 +232,13 @@ export const SingleAnalysis: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="p-4 rounded-lg bg-risk-high/15 border border-risk-high/40 text-risk-high text-xs flex items-start gap-2.5">
+        <div
+          role="alert"
+          className="p-4 rounded-lg bg-risk-high/15 border border-risk-high/40 text-risk-high text-xs flex items-start gap-2.5"
+        >
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <div>
-            <strong className="block font-semibold">Inference Error</strong>
+            <strong className="block font-semibold">Validation or Inference Error</strong>
             <span>{error}</span>
           </div>
         </div>
@@ -192,61 +256,81 @@ export const SingleAnalysis: React.FC = () => {
                     Transaction Variables (30 Features)
                   </h2>
                 </div>
-                <span className="text-xs text-navy-400">Canonical Feature Set</span>
+                <span className="text-xs text-navy-400 font-mono">Canonical Schema</span>
               </div>
 
               {/* Core Features: Amount and Time */}
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-navy-300 mb-1.5">
-                      Transaction Amount ($)
+                    <label
+                      htmlFor="tx-amount"
+                      className="block text-xs font-medium text-navy-300 mb-1.5"
+                    >
+                      Transaction Amount ($) <span className="text-risk-high">*</span>
                     </label>
                     <input
+                      id="tx-amount"
                       type="number"
                       step="any"
+                      min="0"
                       required
                       value={features.Amount ?? 0}
                       onChange={(e) => handleFeatureChange("Amount", e.target.value)}
                       className="w-full bg-navy-850 border border-navy-700 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-accent-sky font-mono"
                     />
                     <p className="text-[11px] text-navy-400 mt-1">
-                      Monetary transaction value in USD
+                      Monetary transaction value in USD (scaled via RobustScaler)
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-navy-300 mb-1.5">
-                      Elapsed Time (Seconds)
+                    <label
+                      htmlFor="tx-time"
+                      className="block text-xs font-medium text-navy-300 mb-1.5"
+                    >
+                      Elapsed Time (Seconds) <span className="text-risk-high">*</span>
                     </label>
                     <input
+                      id="tx-time"
                       type="number"
                       step="any"
+                      min="0"
                       required
                       value={features.Time ?? 0}
                       onChange={(e) => handleFeatureChange("Time", e.target.value)}
                       className="w-full bg-navy-850 border border-navy-700 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-accent-sky font-mono"
                     />
                     <p className="text-[11px] text-navy-400 mt-1">
-                      Seconds elapsed since dataset epoch
+                      Seconds elapsed since dataset start
                     </p>
                   </div>
                 </div>
 
                 {/* Primary Fraud Driver PCA Features (V14, V17, V12, V10) */}
                 <div className="pt-2">
-                  <div className="text-xs font-semibold text-white mb-2 flex items-center justify-between">
-                    <span>Key Discriminative Features (Top SHAP Drivers)</span>
+                  <div className="text-xs font-semibold text-white mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      Key Discriminative Features (Top SHAP Drivers)
+                      <Info className="w-3.5 h-3.5 text-navy-400" />
+                    </span>
                     <span className="text-[11px] text-accent-sky font-normal">
-                      Most influential components
+                      Most influential tree split variables
                     </span>
                   </div>
+                  <p className="text-[11px] text-navy-400 mb-2">
+                    Features V1–V28 are PCA transformed cardholder traits. Negative shifts in V14, V17, and V12 strongly indicate compromise.
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {["V14", "V17", "V12", "V10"].map((fname) => (
                       <div key={fname} className="p-2.5 rounded-lg bg-navy-850 border border-navy-700">
-                        <label className="block text-[11px] font-mono text-navy-300 mb-1">
+                        <label
+                          htmlFor={`tx-${fname}`}
+                          className="block text-[11px] font-mono font-medium text-navy-300 mb-1"
+                        >
                           {fname}
                         </label>
                         <input
+                          id={`tx-${fname}`}
                           type="number"
                           step="any"
                           value={features[fname] ?? 0}
@@ -263,6 +347,7 @@ export const SingleAnalysis: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAdvancedPca(!showAdvancedPca)}
+                    aria-expanded={showAdvancedPca}
                     className="text-xs text-accent-sky hover:text-accent-blue font-medium flex items-center gap-1.5"
                   >
                     <span>{showAdvancedPca ? "Hide" : "Show All"} 24 Additional PCA Features (V1–V28)</span>
@@ -274,10 +359,14 @@ export const SingleAnalysis: React.FC = () => {
                         (f) => !["V14", "V17", "V12", "V10"].includes(f)
                       ).map((fname) => (
                         <div key={fname}>
-                          <label className="block text-[10px] font-mono text-navy-400 mb-0.5">
+                          <label
+                            htmlFor={`tx-${fname}`}
+                            className="block text-[10px] font-mono text-navy-400 mb-0.5"
+                          >
                             {fname}
                           </label>
                           <input
+                            id={`tx-${fname}`}
                             type="number"
                             step="any"
                             value={features[fname] ?? 0}
@@ -293,16 +382,17 @@ export const SingleAnalysis: React.FC = () => {
                 {/* Policy Threshold Adjustment Controls */}
                 <div className="pt-3 border-t border-navy-700/60">
                   <div className="text-xs font-semibold text-white mb-2 flex items-center justify-between">
-                    <span>Operational Policy Thresholds</span>
-                    <span className="text-[11px] text-navy-400">Configurable boundary limits</span>
+                    <span>Operational Risk Policy Thresholds</span>
+                    <span className="text-[11px] text-navy-400 font-mono">T₁ &lt; 0.30 • T₂ ≥ 0.70</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] text-navy-300 mb-1">
+                      <label htmlFor="low-thresh" className="block text-[11px] text-navy-300 mb-1">
                         Low Risk Cutoff (T₁ &lt;):{" "}
-                        <span className="font-mono text-white">{lowThreshold}</span>
+                        <span className="font-mono text-white font-bold">{lowThreshold.toFixed(2)}</span>
                       </label>
                       <input
+                        id="low-thresh"
                         type="range"
                         min="0.05"
                         max="0.45"
@@ -313,11 +403,12 @@ export const SingleAnalysis: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-navy-300 mb-1">
+                      <label htmlFor="high-thresh" className="block text-[11px] text-navy-300 mb-1">
                         High Risk Cutoff (T₂ ≥):{" "}
-                        <span className="font-mono text-white">{highThreshold}</span>
+                        <span className="font-mono text-white font-bold">{highThreshold.toFixed(2)}</span>
                       </label>
                       <input
+                        id="high-thresh"
                         type="range"
                         min="0.55"
                         max="0.95"
@@ -331,7 +422,7 @@ export const SingleAnalysis: React.FC = () => {
                 </div>
 
                 {/* Submit Action Button */}
-                <div className="pt-3">
+                <div className="pt-3 flex items-center gap-3">
                   <button
                     type="submit"
                     disabled={isSubmitting}
@@ -357,7 +448,7 @@ export const SingleAnalysis: React.FC = () => {
           {/* Right Column (5 cols): Prediction Verdict and SHAP Output */}
           <div className="lg:col-span-5 space-y-6">
             {/* Risk Verdict Card */}
-            <div className="card p-6">
+            <div className="card p-6" aria-live="polite">
               <div className="flex items-center justify-between pb-4 border-b border-navy-700/60 mb-5">
                 <div className="flex items-center gap-2">
                   <BarChart2 className="w-5 h-5 text-accent-sky" />
@@ -383,8 +474,14 @@ export const SingleAnalysis: React.FC = () => {
                       {(prediction.fraud_probability * 100).toFixed(2)}%
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="w-full bg-navy-900 rounded-full h-2.5 overflow-hidden">
+                    {/* Progress Bar with accessible ARIA */}
+                    <div
+                      role="progressbar"
+                      aria-valuenow={Math.round(prediction.fraud_probability * 100)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      className="w-full bg-navy-900 rounded-full h-2.5 overflow-hidden"
+                    >
                       <div
                         className={`h-2.5 rounded-full transition-all duration-500 ${
                           prediction.risk_category === "High Risk"
@@ -401,17 +498,34 @@ export const SingleAnalysis: React.FC = () => {
                   {/* Recommendation & Policy Decision */}
                   <div className="p-3.5 rounded-lg bg-navy-850 border border-navy-700">
                     <span className="text-[11px] uppercase font-bold text-navy-400 block mb-1">
-                      Operational Action
+                      Operational Action Required
                     </span>
-                    <p className="text-xs font-medium text-white">
+                    <p className="text-xs font-medium text-white leading-relaxed">
                       {prediction.operational_recommendation}
                     </p>
                   </div>
 
-                  {/* Model Metadata footer */}
+                  {/* Model Metadata footer & Copy button */}
                   <div className="pt-2 text-[11px] text-navy-400 flex items-center justify-between font-mono">
                     <span>Engine: {prediction.model_name}</span>
-                    <span>T₁={prediction.threshold_configuration.low_threshold} / T₂={prediction.threshold_configuration.high_threshold}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyResult}
+                      className="text-accent-sky hover:text-white flex items-center gap-1 transition-colors"
+                      title="Copy result summary"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-risk-low" />
+                          <span className="text-risk-low">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Report</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -441,7 +555,7 @@ export const SingleAnalysis: React.FC = () => {
               {explanation ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs text-navy-300 pb-2 border-b border-navy-700">
-                    <span>Baseline Expectation:</span>
+                    <span>Baseline Model Expectation:</span>
                     <span className="font-mono text-white">{(explanation.base_value * 100).toFixed(2)}%</span>
                   </div>
 
@@ -460,7 +574,7 @@ export const SingleAnalysis: React.FC = () => {
                           >
                             <span className="font-mono font-medium text-white">{driver.feature}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-navy-400 font-mono">val={driver.raw_value.toFixed(2)}</span>
+                              <span className="text-[11px] text-navy-400 font-mono">raw={driver.raw_value.toFixed(2)}</span>
                               <span className="font-mono text-risk-high font-semibold">
                                 +{(driver.shap_value * 100).toFixed(2)}%
                               </span>
@@ -486,7 +600,7 @@ export const SingleAnalysis: React.FC = () => {
                           >
                             <span className="font-mono font-medium text-white">{driver.feature}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-navy-400 font-mono">val={driver.raw_value.toFixed(2)}</span>
+                              <span className="text-[11px] text-navy-400 font-mono">raw={driver.raw_value.toFixed(2)}</span>
                               <span className="font-mono text-risk-low font-semibold">
                                 {(driver.shap_value * 100).toFixed(2)}%
                               </span>

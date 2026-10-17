@@ -40,12 +40,14 @@ Fraud_Detection/
 │   ├── train.py                # Model training routines
 │   ├── evaluate.py             # Evaluation metrics & report generation
 │   ├── predict.py              # Single & batch inference interface
-│   └── risk_engine.py          # Probability-to-risk scoring engine
+│   ├── risk_engine.py          # Probability-to-risk scoring engine
+│   └── explainability.py       # SHAP TreeExplainer & attribution engine
 ├── tests/
 │   ├── __init__.py
 │   ├── test_config.py          # Configuration and path validation tests
 │   ├── test_dashboard.py       # Streamlit AppTest and dashboard verification
 │   ├── test_data_validation.py # Data validation tests
+│   ├── test_explainability.py  # SHAP explainer & attribution tests
 │   ├── test_preprocessing.py   # Leakage prevention & pipeline tests
 │   ├── test_risk_engine.py     # Threshold and risk score boundary tests
 │   └── test_predictions.py     # End-to-end inference verification
@@ -124,11 +126,12 @@ Or via virtual environment Python:
 
 ### Dashboard Sections
 1. **Executive Overview**: Real-time KPI cards (test volume, recall, precision, PR-AUC), test confusion matrix, and operational tier breakdown.
-2. **Single Transaction Scoring**: Real-time form with quick-fill presets from real dataset samples (legitimate vs. fraud), manual parameter inputs across all 30 canonical features (`Time`, `V1`–`V28`, `Amount`), and threshold-driven risk scoring.
+2. **Single Transaction Scoring**: Real-time form with quick-fill presets from real dataset samples (legitimate vs. fraud), manual parameter inputs across all 30 canonical features (`Time`, `V1`–`V28`, `Amount`), threshold-driven risk scoring, and inline local SHAP attribution expander.
 3. **Batch CSV Analysis**: High-throughput file upload, strict schema validation, batch risk scoring, category filtering, and exportable CSV download. A 10-row sample CSV is provided in `data/sample_batch_transactions.csv`.
 4. **Model Performance & Benchmarks**: Test set evaluation matrix across Logistic Regression, Random Forest, and XGBoost, Precision-Recall curves, and architectural trade-off analysis.
-5. **Transaction Explorer**: Interactive browsing of historical transactions filtered by ground truth label, amount ranges, and real-time model scoring.
-6. **Governance & Limitations**: Model card, dataset constraints, probability calibration notes, and financial regulatory disclaimer.
+5. **Model Explainability (SHAP)**: Global feature importance rankings, beeswarm summary visualization, and interactive local transaction attribution plots displaying positive/negative probability contributions.
+6. **Transaction Explorer**: Interactive browsing of historical transactions filtered by ground truth label, amount ranges, and real-time model scoring.
+7. **Governance & Limitations**: Model card, dataset constraints, probability calibration notes, and financial regulatory disclaimer.
 
 ---
 
@@ -142,7 +145,7 @@ Or via virtual environment Python:
 - **Phase 5**: Model Comparison and Selection (Champion: Random Forest, PR-AUC 0.8462) — **[VERIFIED]**
 - **Phase 6**: Risk Scoring Engine & Prediction Interface — **[VERIFIED]**
 - **Phase 7**: Interactive Streamlit Dashboard — **[VERIFIED]**
-- **Phase 8**: Model Explainability (SHAP) — *[Pending]*
+- **Phase 8**: Model Explainability (SHAP) — **[VERIFIED]**
 - **Phase 9**: Comprehensive Quality Assurance & Reliability Tests — *[Pending]*
 - **Phase 10**: Deployment and Portfolio Preparation — *[Pending]*
 - **Phase 11**: Final Review and Interview Readiness — *[Pending]*

@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 7 Complete & Verified — Awaiting Approval for Phase 8
+- **Overall Status**: Phase 8 Complete & Verified — Awaiting Approval for Phase 9
 
 ---
 
@@ -24,8 +24,8 @@ Authoritative single source of truth for project execution status, technical dec
 | **Phase 4** | Imbalance Handling Experiments | **VERIFIED** | Yes (Approved) |
 | **Phase 5** | Model Comparison and Selection | **VERIFIED** | Yes (Approved) |
 | **Phase 6** | Risk Scoring and Prediction Interface | **VERIFIED** | Yes (Approved) |
-| **Phase 7** | Streamlit Dashboard | **VERIFIED** | Awaiting Approval to proceed to Phase 8 |
-| **Phase 8** | Explainability (SHAP) | NOT STARTED | Pending |
+| **Phase 7** | Streamlit Dashboard | **VERIFIED** | Yes (Approved) |
+| **Phase 8** | Explainability (SHAP) | **VERIFIED** | Awaiting Approval to proceed to Phase 9 |
 | **Phase 9** | Quality Assurance and Reliability | NOT STARTED | Pending |
 | **Phase 10** | Deployment and Portfolio Preparation | NOT STARTED | Pending |
 | **Phase 11** | Final Review and Interview Readiness | NOT STARTED | Pending |
@@ -178,5 +178,64 @@ Authoritative single source of truth for project execution status, technical dec
 - [x] Implemented automated dashboard tests via Streamlit `AppTest` (56/56 total tests pass).
 - [x] Verified zero regressions across all previous phase test suites.
 - [x] Phase 7 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 8.
+- [x] Explicit user approval received to proceed to Phase 8.
+
+### Phase 8 — Model Explainability with SHAP
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicit user prompt received to implement Phase 8.
+
+#### 1. Key Technical Accomplishments
+- **SHAP Integration & Explainer Selection**: Installed `shap==0.54.1` on Python 3.13.1. Wrapped the fitted champion pipeline (`RobustScaler` + `RandomForestClassifier`) using `shap.TreeExplainer`.
+- **Output Scale & Mathematical Efficiency**:
+  - Explanations are computed on the **probability scale** for Class 1 (Fraudulent).
+  - Verified exact additive efficiency property: $\text{Base Prior} + \sum_{j=1}^{30} \phi_j = \hat{P}(\text{Fraud} = 1)$ down to machine precision ($\max |\Delta| < 10^{-15}$).
+  - Positive SHAP contributions ($\phi_j > 0$) directly shift predicted fraud probability upward (increasing risk).
+  - Negative SHAP contributions ($\phi_j < 0$) directly shift predicted fraud probability downward (reducing risk toward benign).
+- **Global Feature Importance**:
+  - Evaluated on a representative 498-sample test cohort (including 98 confirmed frauds).
+  - Derived mean absolute SHAP value $|\phi_j|$ per feature:
+    1. `V14` (mean $|\phi| = 0.0866$, 15.9% relative share)
+    2. `V12` (mean $|\phi| = 0.0699$, 12.8% relative share)
+    3. `V4` (mean $|\phi| = 0.0609$, 11.1% relative share)
+    4. `V10` (mean $|\phi| = 0.0563$, 10.3% relative share)
+    5. `V17` (mean $|\phi| = 0.0440$, 8.1% relative share)
+  - Results perfectly corroborate findings from Phase 1 EDA and tree splits from Phase 5.
+  - Generated and persisted `reports/shap_global_summary.png` (high-contrast beeswarm plot) and `reports/shap_feature_importance.json`.
+- **Local Transaction Attribution & Visualization**:
+  - Implemented `explain_instance()` in `src/explainability.py` returning base value, predicted probability, full ranked contributions, and top positive/negative drivers.
+  - Implemented `plot_local_contributions()` generating fintech dark-themed horizontal contribution bar charts (Crimson `#EF4444` for risk increases, Emerald `#10B981` for risk decreases).
+- **Streamlit Dashboard Integration**:
+  - Added dedicated `"🔬 Explainability (SHAP)"` section in `app.py`.
+  - Added in-context SHAP feature attribution expander inside Single Transaction Scoring for real-time decision inspection.
+  - Set thread-safe headless Matplotlib backend (`matplotlib.use("Agg")`) to avoid GUI thread warnings.
+- **Auditing & Governance Boundaries**: Explicitly documented that anonymized PCA features `V1`–`V28` reflect statistical correlation within model decision boundaries, not physical causation, merchant semantics, or cardholder intent.
+
+#### 2. Artifacts Created & Modified
+- `src/explainability.py`: Complete `FraudExplainer` class with `TreeExplainer`, local & global attribution, and plotting utilities.
+- `reports/shap_global_summary.png`: Beeswarm summary plot over 498 representative transactions.
+- `reports/shap_feature_importance.json`: Machine-readable ranked feature importances.
+- `tests/test_explainability.py`: 8 unit tests covering explainer initialization, dimension checks, efficiency identity, positive/negative partitioning, and plotting.
+- `app.py`: Integrated dedicated SHAP explainability section and inline single-transaction attribution expander.
+- `tests/test_dashboard.py`: Updated AppTest navigation to verify SHAP section rendering.
+- `requirements.txt`: Added pinned `shap==0.54.1`, `slicer==0.0.8`, `tqdm>=4.27.0`.
+- `README.md`: Added explainability section documentation.
+- `PROJECT_PROGRESS.md`: Phase 8 marked VERIFIED.
+
+#### 3. Automated Tests Run & Results
+- Total Tests: 64 (4 config + 9 validation + 9 preprocessing + 12 training + 7 risk engine + 10 prediction + 5 dashboard + 8 explainability)
+- `tests/test_explainability.py` (8 tests) -> **ALL PASSED**
+- Result: **64 passed, 0 failed in 27.52s (100% pass rate)**.
+
+#### 4. Phase 8 Acceptance Checklist
+- [x] Verified selected model artifact `models/best_model.joblib` exists and is compatible with `TreeExplainer`.
+- [x] Installed and pinned `shap==0.54.1` without breaking dependencies.
+- [x] Implemented `src/explainability.py` supporting global and local SHAP explanations.
+- [x] Verified explanation dimensions, feature ordering preservation, and mathematical efficiency identity.
+- [x] Generated and saved global summary plot and machine-readable feature importance report.
+- [x] Integrated dedicated Explainability tab and inline single-transaction attribution into Streamlit.
+- [x] Added non-causal interpretability and PCA anonymization governance notices.
+- [x] Implemented 8 automated unit tests in `tests/test_explainability.py` (64/64 total tests pass).
+- [x] Verified zero regressions across all previous phase test suites.
+- [x] Phase 8 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 9.
+
 

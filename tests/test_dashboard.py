@@ -79,3 +79,9 @@ def test_dashboard_apptest_navigation():
     at.sidebar.radio[0].set_value("📈 Model Performance & Benchmarks").run()
     assert not at.exception
     assert any("Model Performance" in title.value for title in at.title)
+
+    # Test navigating to Explainability (SHAP)
+    at.sidebar.radio[0].set_value("🔬 Explainability (SHAP)").run()
+    assert not at.exception
+    assert any("Explainability" in title.value for title in at.title)
+

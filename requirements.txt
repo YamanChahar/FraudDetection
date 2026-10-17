@@ -100,5 +100,7 @@ uvicorn==0.54.0
 watchdog==6.0.0
 websockets==17.2
 
-# Upcoming Phase Dependencies:
-# Phase 8: shap
+# Phase 8: Model Explainability with SHAP (Phase 8 verified)
+shap==0.54.1
+slicer==0.0.8
+tqdm>=4.27.0

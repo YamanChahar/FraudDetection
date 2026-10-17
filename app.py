@@ -11,11 +11,15 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 
 from src import config
+from src.explainability import FraudExplainer
 from src.predict import FraudPredictor, validate_inference_features
 from src.risk_engine import RiskThresholds, assess_risk
 
@@ -128,6 +132,28 @@ def load_model_comparison_report() -> Optional[Dict[str, Any]]:
     return None
 
 
+@st.cache_resource(show_spinner=False)
+def get_cached_explainer() -> Optional[FraudExplainer]:
+    """Load and cache the SHAP TreeExplainer for the champion pipeline."""
+    try:
+        return FraudExplainer(config.BEST_MODEL_PATH)
+    except FileNotFoundError:
+        return None
+    except Exception as e:
+        st.error(f"Error initializing SHAP explainer: {e}")
+        return None
+
+
+@st.cache_data(show_spinner=False)
+def load_shap_feature_importance() -> Optional[Dict[str, Any]]:
+    """Load precomputed global SHAP feature importance report."""
+    report_path = config.REPORTS_DIR / "shap_feature_importance.json"
+    if report_path.exists():
+        with open(report_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 # -----------------------------------------------------------------------------
 # Sidebar Navigation & Operational Controls
 # -----------------------------------------------------------------------------
@@ -145,6 +171,7 @@ navigation_selection = st.sidebar.radio(
         "🔍 Single Transaction Scoring",
         "📁 Batch CSV Analysis",
         "📈 Model Performance & Benchmarks",
+        "🔬 Explainability (SHAP)",
         "🔎 Transaction Explorer",
         "ℹ️ Governance & Limitations",
     ],
@@ -436,6 +463,40 @@ elif navigation_selection == "🔍 Single Transaction Scoring":
                     f"(Low < {active_thresholds.low_threshold:.2f}, High ≥ {active_thresholds.high_threshold:.2f})."
                 )
 
+                # Local SHAP Attribution Expander
+                explainer = get_cached_explainer()
+                if explainer is not None:
+                    with st.expander("🔬 View SHAP Feature Attribution for this Decision", expanded=(cat_val == "High Risk")):
+                        with st.spinner("Computing SHAP feature contributions..."):
+                            exp_res = explainer.explain_instance(tx_data)
+                            fig = explainer.plot_local_contributions(exp_res, max_display=8)
+                            st.pyplot(fig)
+                            plt.close(fig)
+
+                            d_col1, d_col2 = st.columns(2)
+                            with d_col1:
+                                st.markdown("##### 🔺 Top Risk-Increasing Drivers")
+                                if exp_res["top_risk_increasing"]:
+                                    for d in exp_res["top_risk_increasing"]:
+                                        st.markdown(
+                                            f"- **{d['feature']}** ({d['raw_value']:.2f}): "
+                                            f"<span style='color: #EF4444; font-weight: bold;'>+{d['shap_value']:.4f}</span> Δ prob",
+                                            unsafe_allow_html=True,
+                                        )
+                                else:
+                                    st.caption("No significant positive risk drivers.")
+                            with d_col2:
+                                st.markdown("##### 🔻 Top Risk-Decreasing Drivers")
+                                if exp_res["top_risk_decreasing"]:
+                                    for d in exp_res["top_risk_decreasing"]:
+                                        st.markdown(
+                                            f"- **{d['feature']}** ({d['raw_value']:.2f}): "
+                                            f"<span style='color: #10B981; font-weight: bold;'>{d['shap_value']:.4f}</span> Δ prob",
+                                            unsafe_allow_html=True,
+                                        )
+                                else:
+                                    st.caption("No significant negative risk drivers.")
+
             except Exception as e:
                 st.error(f"Inference Error: {e}")
 
@@ -609,7 +670,129 @@ elif navigation_selection == "📈 Model Performance & Benchmarks":
 
 
 # -----------------------------------------------------------------------------
-# SECTION E: Transaction Explorer
+# SECTION E: Explainability (SHAP)
+# -----------------------------------------------------------------------------
+elif navigation_selection == "🔬 Explainability (SHAP)":
+    st.title("🔬 Model Explainability & Feature Attribution (SHAP)")
+    st.markdown(
+        "Auditability, governance, and transparent decision-support via **TreeExplainer**. "
+        "Deconstructs Random Forest predictions into exact, additive feature contributions on the probability scale."
+    )
+
+    shap_explainer = get_cached_explainer()
+
+    if shap_explainer is None:
+        st.error("Model artifact offline. Please train `models/best_model.joblib` to enable SHAP explanations.")
+    else:
+        st.subheader("1. Global Feature Attribution")
+        st.markdown(
+            "Mean absolute SHAP value $|\\phi_j|$ across a representative held-out cohort (including confirmed frauds). "
+            "Higher values denote features with the largest overall leverage across fraud vs. legitimate decisions."
+        )
+
+        g_col1, g_col2 = st.columns([1.1, 0.9])
+
+        with g_col1:
+            global_summary_img = config.REPORTS_DIR / "shap_global_summary.png"
+            if global_summary_img.exists():
+                st.image(
+                    str(global_summary_img),
+                    caption="SHAP Beeswarm Summary: Feature values (red=high, blue=low) vs. impact on fraud probability.",
+                    use_container_width=True,
+                )
+            else:
+                st.info("Global summary plot not found in reports.")
+
+        with g_col2:
+            shap_json = load_shap_feature_importance()
+            if shap_json is not None:
+                df_imp = pd.DataFrame(shap_json["feature_importance"])
+                display_imp = df_imp[["rank", "feature", "mean_abs_shap", "relative_importance"]].copy()
+                display_imp.columns = ["Rank", "Feature", "Mean |SHAP|", "Relative Share"]
+                display_imp["Relative Share"] = display_imp["Relative Share"].apply(lambda x: f"{x*100:.2f}%")
+                display_imp["Mean |SHAP|"] = display_imp["Mean |SHAP|"].apply(lambda x: f"{x:.4f}")
+                st.dataframe(display_imp.head(15), use_container_width=True, height=450)
+            else:
+                st.info("Precomputed feature importance report not found.")
+
+        st.markdown("---")
+        st.subheader("2. Local Transaction Attribution Explorer")
+        st.markdown("Deconstruct any specific payment transaction into positive and negative risk factors.")
+
+        preset_local = st.radio(
+            "Select transaction to explain:",
+            ["Known Legitimate Transaction (Sample #1)", "Known Fraudulent Transaction (Sample #2)"],
+            horizontal=True,
+            key="shap_preset_choice",
+        )
+
+        if preset_local == "Known Legitimate Transaction (Sample #1)":
+            sample_tx_data = {
+                "Time": 0.0, "Amount": 149.62,
+                "V1": -1.3598, "V2": -0.0728, "V3": 2.5363, "V4": 1.3782,
+                "V5": -0.3383, "V6": 0.4624, "V7": 0.2396, "V8": 0.0987,
+                "V9": 0.3638, "V10": 0.0908, "V11": -0.5516, "V12": -0.6178,
+                "V13": -0.9914, "V14": -0.3112, "V15": 1.4682, "V16": -0.4704,
+                "V17": 0.2080, "V18": 0.0258, "V19": 0.4040, "V20": 0.2514,
+                "V21": -0.0183, "V22": 0.2778, "V23": -0.1105, "V24": 0.0669,
+                "V25": 0.1285, "V26": -0.1891, "V27": 0.1336, "V28": -0.0211,
+            }
+        else:
+            sample_tx_data = {
+                "Time": 406.0, "Amount": 0.00,
+                "V1": -2.3122, "V2": 1.9520, "V3": -1.6099, "V4": 3.9979,
+                "V5": -0.5222, "V6": -1.4265, "V7": -2.5374, "V8": 1.3917,
+                "V9": -2.7701, "V10": -2.7723, "V11": 3.2020, "V12": -2.8999,
+                "V13": -0.5952, "V14": -4.2893, "V15": 0.3897, "V16": -1.1407,
+                "V17": -2.8301, "V18": -0.0168, "V19": 0.4170, "V20": 0.1269,
+                "V21": 0.5172, "V22": -0.0350, "V23": -0.4652, "V24": 0.3202,
+                "V25": 0.0441, "V26": 0.1778, "V27": 0.2611, "V28": -0.1433,
+            }
+
+        with st.spinner("Calculating SHAP attribution values..."):
+            local_exp = shap_explainer.explain_instance(sample_tx_data)
+            fig_local = shap_explainer.plot_local_contributions(local_exp, max_display=10)
+            st.pyplot(fig_local)
+            plt.close(fig_local)
+
+        p_col1, p_col2 = st.columns(2)
+        with p_col1:
+            st.markdown("##### 🔺 Top Risk-Increasing Features")
+            if local_exp["top_risk_increasing"]:
+                for d in local_exp["top_risk_increasing"]:
+                    st.markdown(
+                        f"- **{d['feature']}** (raw = `{d['raw_value']:.2f}`): "
+                        f"<span style='color: #EF4444; font-weight: bold;'>+{d['shap_value']:.4f}</span> Δ probability",
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.caption("No significant positive risk drivers for this transaction.")
+
+        with p_col2:
+            st.markdown("##### 🔻 Top Risk-Decreasing Features")
+            if local_exp["top_risk_decreasing"]:
+                for d in local_exp["top_risk_decreasing"]:
+                    st.markdown(
+                        f"- **{d['feature']}** (raw = `{d['raw_value']:.2f}`): "
+                        f"<span style='color: #10B981; font-weight: bold;'>{d['shap_value']:.4f}</span> Δ probability",
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.caption("No significant negative risk drivers for this transaction.")
+
+        st.markdown("---")
+        st.subheader("3. Governance & Interpretability Boundaries")
+        st.markdown(
+            """
+            - **Non-Causal Interpretability**: SHAP attributes correlation and tree split utility in separating the two classes. It does **not** identify physical causality or cardholder motive.
+            - **Anonymized Component Limitations**: Features `V1`–`V28` are anonymized linear projections. Strong negative values in `V14` or `V12` correlate statistically with fraud patterns, but do not map to named behavioral attributes (e.g. merchant category or terminal location).
+            - **Efficiency Guarantee**: For Random Forest, the additive property holds strictly: $\\text{Base Prior} + \\sum_{j=1}^{30} \\phi_j = P(\\text{Fraud} = 1)$.
+            """
+        )
+
+
+# -----------------------------------------------------------------------------
+# SECTION F: Transaction Explorer
 # -----------------------------------------------------------------------------
 elif navigation_selection == "🔎 Transaction Explorer":
     st.title("🔎 Transaction Explorer & Audit Log")
@@ -667,7 +850,7 @@ elif navigation_selection == "🔎 Transaction Explorer":
 
 
 # -----------------------------------------------------------------------------
-# SECTION F: Model Governance & Limitations
+# SECTION G: Model Governance & Limitations
 # -----------------------------------------------------------------------------
 elif navigation_selection == "ℹ️ Governance & Limitations":
     st.title("ℹ️ Model Governance & System Limitations")

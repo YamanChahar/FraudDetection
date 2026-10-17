@@ -12,6 +12,8 @@ from typing import Any, Dict, Literal, Optional, Union
 
 import joblib
 import pandas as pd
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
@@ -37,7 +39,7 @@ def build_logistic_regression_pipeline(
 
     Args:
         scaler_type: 'robust' for RobustScaler or 'standard' for StandardScaler.
-        class_weight: Weighting strategy ('balanced' or custom dict).
+        class_weight: Weighting strategy ('balanced', None, or custom dict).
         max_iter: Maximum solver convergence iterations.
         random_state: Reproducibility random seed.
         C: Inverse regularization strength parameter.
@@ -58,6 +60,57 @@ def build_logistic_regression_pipeline(
     pipeline = Pipeline(
         steps=[
             ("preprocessor", preprocessor),
+            ("classifier", classifier),
+        ]
+    )
+    return pipeline
+
+
+def build_smote_logistic_regression_pipeline(
+    scaler_type: Literal["robust", "standard"] = "robust",
+    sampling_strategy: Union[float, str] = "auto",
+    max_iter: int = 1000,
+    random_state: int = config.RANDOM_STATE,
+    C: float = 1.0,
+    solver: str = "lbfgs",
+) -> ImbPipeline:
+    """Construct an imblearn Pipeline applying SMOTE strictly inside training partitions.
+
+    In this pipeline:
+    1. Preprocessor scales Time & Amount and passes V1-V28 on training fold.
+    2. SMOTE creates synthetic minority fraud samples ONLY on training fold.
+    3. Classifier trains on the balanced training fold.
+    4. During predict() / transform() on validation/test data, SMOTE is automatically
+       skipped by imblearn, strictly preventing synthetic leakage.
+
+    Args:
+        scaler_type: 'robust' or 'standard'.
+        sampling_strategy: Target ratio of minority to majority samples.
+        max_iter: Maximum solver convergence iterations.
+        random_state: Reproducibility random seed.
+        C: Inverse regularization strength parameter.
+        solver: Optimization algorithm.
+
+    Returns:
+        ImbPipeline: Unfitted imbalanced-learn Pipeline.
+    """
+    preprocessor = build_preprocessor(scaler_type=scaler_type)
+    smote = SMOTE(
+        sampling_strategy=sampling_strategy,
+        random_state=random_state,
+    )
+    classifier = LogisticRegression(
+        class_weight=None,  # Unweighted classifier since SMOTE balances training data
+        max_iter=max_iter,
+        random_state=random_state,
+        C=C,
+        solver=solver,
+    )
+
+    pipeline = ImbPipeline(
+        steps=[
+            ("preprocessor", preprocessor),
+            ("smote", smote),
             ("classifier", classifier),
         ]
     )

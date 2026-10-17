@@ -9,7 +9,7 @@ Authoritative single source of truth for project execution status, technical dec
 - **Target Role/Domain**: Portfolio ML / Software Engineering Project (Fintech Fraud & Risk)
 - **Active Environment**: Windows (PowerShell), Python 3.13.1, Git 2.55.0.windows.2
 - **Virtual Environment**: `.venv` (Active and isolated)
-- **Overall Status**: Phase 3 Complete & Verified — Awaiting Approval for Phase 4
+- **Overall Status**: Phase 4 Complete & Verified — Awaiting Approval for Phase 5
 
 ---
 
@@ -20,8 +20,8 @@ Authoritative single source of truth for project execution status, technical dec
 | **Phase 0** | Workspace, Environment, and Repository Setup | **VERIFIED** | Yes (Approved) |
 | **Phase 1** | Data Validation and Exploratory Data Analysis | **VERIFIED** | Yes (Approved) |
 | **Phase 2** | Preprocessing and Experimental Design | **VERIFIED** | Yes (Approved) |
-| **Phase 3** | Logistic Regression Baseline | **VERIFIED** | Awaiting Approval to proceed to Phase 4 |
-| **Phase 4** | Imbalance Handling Experiments | NOT STARTED | Pending |
+| **Phase 3** | Logistic Regression Baseline | **VERIFIED** | Yes (Approved) |
+| **Phase 4** | Imbalance Handling Experiments | **VERIFIED** | Awaiting Approval to proceed to Phase 5 |
 | **Phase 5** | Model Comparison and Selection | NOT STARTED | Pending |
 | **Phase 6** | Risk Scoring and Prediction Interface | NOT STARTED | Pending |
 | **Phase 7** | Streamlit Dashboard | NOT STARTED | Pending |
@@ -45,88 +45,81 @@ Authoritative single source of truth for project execution status, technical dec
 - **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
 - Stratified 80/20 split: 227,845 train rows (394 frauds), 56,962 test rows (98 frauds). Zero index overlap. RobustScaler for Time & Amount.
 
+### Phase 3 — Logistic Regression Baseline
+- **Status**: **VERIFIED** | Date: 2026-10-17 | Approval: Explicitly received.
+- Baseline Balanced Logistic Regression: PR-AUC = 0.7175, Recall = 0.9184 (90/98 frauds caught), Precision = 0.0609, F1 = 0.1142, ROC-AUC = 0.9720.
+
 ---
 
-### Phase 3 — Logistic Regression Baseline
+### Phase 4 — Class Imbalance Handling Experiments
 - **Status**: **VERIFIED**
 - **Date Completed**: 2026-10-17
 
 #### 1. Tasks Completed
-- Implemented `src/train.py`:
-  - `build_logistic_regression_pipeline()`: Assembles an end-to-end `Pipeline` incorporating the leakage-safe `RobustScaler` preprocessor and `LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)`.
-  - `train_baseline_logistic_regression()`: Trains the pipeline strictly on the 227,845 training samples without touch to test data.
-  - `save_pipeline()` and `load_pipeline()`: Persists the unified pipeline artifact containing both fitted preprocessing and model weights to `models/baseline_logistic_regression.joblib`.
-- Implemented `src/evaluate.py`:
-  - `evaluate_predictions()`: Computes Precision, Recall, F1-Score, ROC-AUC, Average Precision (PR-AUC), Accuracy, Confusion Matrix (TN, FP, FN, TP), operational error rates, and classification report.
-  - `evaluate_model()`: End-to-end evaluation on held-out test data.
-  - `save_evaluation_report()`: Generates machine-readable JSON (`reports/baseline_logistic_regression.json`) and formatted Markdown (`reports/baseline_logistic_regression.md`).
-- Implemented unit test suite in `tests/test_train_evaluate.py` (8 tests covering pipeline building, model fitting, prediction bounds, metric formulas, serialization roundtrips, and report saving).
-- Executed full test suite via `pytest` (30 passed in 9.05s, 100% pass rate).
-- Executed the baseline training and evaluation on the live dataset (227,845 train rows, 56,962 test rows) and recorded actual verified metrics.
+- Installed `imbalanced-learn==0.14.2` and `sklearn-compat==0.1.6` in `.venv`; updated `requirements.txt`.
+- Implemented `build_smote_logistic_regression_pipeline()` in `src/train.py` using `imblearn.pipeline.Pipeline`:
+  - `RobustScaler` preprocessing on training folds.
+  - `SMOTE` oversampling applied strictly on training folds.
+  - Unweighted classifier fitted on resampled training data.
+  - `SMOTE` automatically skipped during inference on validation/test folds to guarantee zero data leakage.
+- Executed Stratified 5-Fold Cross-Validation on $X_{\text{train}}$ only across all three strategies:
+  1. Logistic Regression (Unweighted: `class_weight=None`)
+  2. Logistic Regression (Class-Weighted: `class_weight='balanced'`)
+  3. Logistic Regression with SMOTE (inside `imblearn.pipeline.Pipeline`)
+- Evaluated all three strategies on the isolated held-out test set (56,962 samples).
+- Generated machine-readable and human-readable comparative reports:
+  - `reports/imbalance_experiments.json`
+  - `reports/imbalance_experiments.md`
+- Implemented unit tests in `tests/test_train_evaluate.py` for SMOTE pipeline execution and unweighted pipeline options (32/32 tests pass).
 
-#### 2. Actual Verified Baseline Evaluation Results (Held-Out Test Set: 56,962 Samples)
+#### 2. Actual Verified Comparative Results (Held-Out Test Set: 56,962 Samples)
 
-| Metric | Score | Interpretation / Financial Context |
-|---|---|---|
-| **Average Precision (PR-AUC)** | **`0.7175`** | Primary benchmark for imbalanced fraud across all thresholds. |
-| **Recall (Sensitivity)** | **`0.9184`** (91.84%) | Caught **90 out of 98** actual frauds in the test set. Only 8 frauds missed. |
-| **Precision** | **`0.0609`** (6.09%) | Low precision due to extreme 578:1 base rate and class weighting. |
-| **F1-Score** | **`0.1142`** | Harmonic mean reflecting the trade-off at the default 0.50 threshold. |
-| **ROC-AUC** | **`0.9720`** | High ranking capability, but partially optimistic due to large True Negative pool. |
-| **Raw Accuracy** | **`0.9755`** | Non-primary metric; lowered from 99.83% naive accuracy to detect 91.8% of fraud. |
+| Metric | 1. Unweighted Baseline | 2. Class-Weighted ('balanced') | 3. SMOTE Pipeline |
+|---|---|---|---|
+| **Average Precision (PR-AUC)** | **0.7388** | **0.7175** | **0.7251** |
+| **Recall (Sensitivity)** | **0.6429** (63/98) | **0.9184** (90/98) | **0.9184** (90/98) |
+| **Precision** | **0.8289** | **0.0609** | **0.0589** |
+| **F1-Score** | **0.7241** | **0.1142** | **0.1106** |
+| **ROC-AUC** | **0.9572** | **0.9720** | **0.9712** |
+| **Raw Accuracy** | **0.9992** | **0.9755** | **0.9746** |
+| **True Positives (TP)** | 63 | 90 | 90 |
+| **False Positives (FP)** | 13 | 1,388 | 1,439 |
+| **False Negatives (FN)** | 35 | 8 | 8 |
+| **True Negatives (TN)** | 56,851 | 55,476 | 55,425 |
+| **Training Time** | 1.23s | 2.42s | 4.08s |
 
-#### Confusion Matrix (56,962 Test Transactions)
-- **True Negatives (TN)**: **`55,476`** (Legitimate transactions correctly approved)
-- **False Positives (FP)**: **`1,388`** (Legitimate transactions flagged as fraud — false alarms)
-- **False Negatives (FN)**: **`8`** (Fraudulent transactions missed — unrecovered fraud loss)
-- **True Positives (TP)**: **`90`** (Fraudulent transactions successfully intercepted)
+#### 3. Cross-Validation Results (5-Fold Stratified on $X_{\text{train}}$)
+- **Unweighted**: CV PR-AUC = 0.7622 (± 0.0425) | CV Recall = 0.6421 (± 0.0293) | CV Precision = 0.8835 (± 0.0287)
+- **Class-Weighted**: CV PR-AUC = 0.7477 (± 0.0500) | CV Recall = 0.9138 (± 0.0230) | CV Precision = 0.0630 (± 0.0037)
+- **SMOTE Pipeline**: CV PR-AUC = 0.7464 (± 0.0448) | CV Recall = 0.9188 (± 0.0188) | CV Precision = 0.0600 (± 0.0038)
 
-#### Operational Error Rates:
-- **False Positive Rate (FPR)**: `0.0244` (Flagged 2.44% of legitimate volume)
-- **False Negative Rate (Miss Rate)**: `0.0816` (Missed 8.16% of fraudulent transactions)
+#### 4. Analytical Findings & Operational Trade-offs
+- **Fraud Capture vs. False Alarms**:
+  - The Unweighted model achieves high precision (82.9%) by severely minimizing false positives (13 FP), but at the unacceptable cost of **missing 35 out of 98 frauds (35.7% missed fraud rate)**.
+  - Class-Weighted and SMOTE both prioritize catching fraud, achieving **91.84% recall (catching 90 of 98 frauds)**, but generating ~1,400 false positives due to the linear decision boundary operating in an extreme 578:1 imbalance space.
+- **Does SMOTE Outperform Class Weighting?**:
+  - **No**. SMOTE achieves virtually identical recall (91.84% vs 91.84%) and slightly lower precision (5.89% vs 6.09%, with 1,439 FP vs 1,388 FP) compared to class weighting, while taking **~1.7x longer** to train (4.08s vs 2.42s).
+  - In linear models on PCA-anonymized features, synthetic linear interpolation between minority points does not uncover non-linear decision regions; class weighting achieves equivalent loss penalization without synthetic sampling artifacts.
+- **Architectural Implication for Phase 5**:
+  - Linear models on this dataset have an empirical PR-AUC ceiling around ~0.72–0.74. In Phase 5, we will evaluate non-linear tree ensembles (**Random Forest** and **XGBoost**) which can carve out localized high-risk decision regions to simultaneously achieve high recall and dramatically lower false alarm rates.
 
-#### 3. Technical Decisions & Analytical Insights
-- **What Logistic Regression Learns**:
-  Logistic Regression fits a linear decision hyperplane $\mathbf{w}^T \mathbf{x} + b$ mapped through a sigmoid link function $\sigma(z) = \frac{1}{1 + e^{-z}}$ to estimate the log-odds of a transaction being fraudulent.
-- **Impact of `class_weight='balanced'`**:
-  In unweighted regression, each sample contributes equally to the log-loss. Because legitimate transactions represent 99.83% of data, an unweighted model is incentivized to ignore the minority class to minimize loss. Setting `class_weight='balanced'` scales the loss gradient for fraud samples by $\approx 577$, forcing the optimization algorithm to shift its decision boundary into the legitimate distribution to avoid missing fraud.
-- **The Operational Trade-off**:
-  While balanced class weights successfully achieved an impressive **91.84% recall**, the linear boundary flags **1,388 legitimate transactions** as fraud, yielding a precision of **6.09%** (~1 true fraud caught per ~16 alerts). In a live bank, this would produce investigator alert fatigue and cardholder friction.
-- **Why This is a Baseline**:
-  A single linear hyperplane cannot capture non-linear feature interactions between transaction amounts, time of day, and anonymized PCA components. This sets our performance benchmark: any subsequent resampling technique (Phase 4) or non-linear model (Phase 5: Random Forest, XGBoost) must demonstrate improvement over this PR-AUC of **0.7175**.
+#### 5. Files Created / Modified
+- `src/train.py`: Added `build_smote_logistic_regression_pipeline()` and unweighted options.
+- `tests/test_train_evaluate.py`: Added tests for SMOTE pipeline execution and unweighted pipeline options (32/32 tests pass).
+- `requirements.txt`: Pinned `imbalanced-learn==0.14.2` and `sklearn-compat==0.1.6`.
+- `reports/imbalance_experiments.json`: Machine-readable comparison results.
+- `reports/imbalance_experiments.md`: Comprehensive Markdown comparison matrix.
+- `PROJECT_PROGRESS.md`: Phase 4 marked VERIFIED with actual metrics.
 
-#### 4. Files Created / Modified
-- `src/train.py`: Pipeline construction, training, and artifact persistence.
-- `src/evaluate.py`: Imbalanced metrics computation, confusion matrix extraction, and report persistence.
-- `tests/test_train_evaluate.py`: Automated test suite for training, inference, and metrics.
-- `reports/baseline_logistic_regression.json`: Machine-readable evaluation report.
-- `reports/baseline_logistic_regression.md`: Human-readable summary report.
-- `models/baseline_logistic_regression.joblib`: Trained baseline pipeline artifact (git-ignored).
-- `PROJECT_PROGRESS.md`: Phase 3 updated to VERIFIED with verified metrics.
-
-#### 5. Automated Tests Run & Results
-- Total Tests: 30 (4 config + 9 data validation + 9 preprocessing + 8 train/eval)
-- `tests/test_train_evaluate.py` (8 tests) -> **ALL PASSED**:
-  - `test_build_logistic_regression_pipeline` -> **PASSED**
-  - `test_train_baseline_logistic_regression_produces_fitted_pipeline` -> **PASSED**
-  - `test_pipeline_predictions_and_probabilities_validity` -> **PASSED**
-  - `test_evaluate_predictions_metrics_calculation` -> **PASSED**
-  - `test_evaluate_predictions_raises_on_invalid_bounds` -> **PASSED**
-  - `test_evaluate_model_end_to_end` -> **PASSED**
-  - `test_save_and_load_pipeline` -> **PASSED**
-  - `test_save_evaluation_report` -> **PASSED**
-- Result: **30 passed, 0 failed in 9.05s (100% pass rate)**.
-
-#### 6. Phase 3 Acceptance Checklist
-- [x] Verified Phase 2 completion and confirmed clean environment state.
-- [x] Implemented end-to-end pipeline in `src/train.py` coupling preprocessing and Logistic Regression.
-- [x] Model trained exclusively on $X_{\text{train}}$ with `class_weight='balanced'`.
-- [x] Evaluated model strictly on held-out test set ($X_{\text{test}}$, $y_{\text{test}}$).
-- [x] Computed Precision, Recall, F1, ROC-AUC, PR-AUC, and Confusion Matrix.
-- [x] Saved machine-readable report to `reports/baseline_logistic_regression.json`.
-- [x] Saved formatted summary report to `reports/baseline_logistic_regression.md`.
-- [x] Persisted unified model artifact to `models/baseline_logistic_regression.joblib`.
-- [x] Implemented 8 automated unit tests in `tests/test_train_evaluate.py` (30/30 total tests pass).
-- [x] Documented operational trade-offs and rationale for Phase 4 experiments.
-- [x] Phase 3 status marked **VERIFIED**.
-- [ ] Explicit user approval received to proceed to Phase 4.
+#### 6. Phase 4 Acceptance Checklist
+- [x] Verified Phase 3 baseline completion and confirmed clean environment state.
+- [x] Implemented SMOTE pipeline inside `imblearn.pipeline.Pipeline` with zero test leakage.
+- [x] Executed 5-fold Stratified Cross-Validation on $X_{\text{train}}$ across all three strategies.
+- [x] Evaluated Unweighted, Class-Weighted, and SMOTE on held-out test set ($X_{\text{test}}$, $y_{\text{test}}$).
+- [x] Compared Precision, Recall, F1, PR-AUC, ROC-AUC, confusion matrices, and training times.
+- [x] Saved machine-readable report to `reports/imbalance_experiments.json`.
+- [x] Saved formatted comparison report to `reports/imbalance_experiments.md`.
+- [x] Unit test suite updated and passing (32/32 tests pass).
+- [x] Documented operational trade-offs and rationale for Phase 5 model comparison.
+- [x] Phase 4 status marked **VERIFIED**.
+- [ ] Explicit user approval received to proceed to Phase 5.

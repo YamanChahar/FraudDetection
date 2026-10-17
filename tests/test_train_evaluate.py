@@ -167,3 +167,40 @@ def test_save_evaluation_report(tmp_path, monkeypatch):
     with open(md_path, "r", encoding="utf-8") as f:
         md_text = f.read()
         assert "# Model Evaluation Report: TestModel" in md_text
+
+
+def test_build_and_train_smote_pipeline():
+    """Verify that build_smote_logistic_regression_pipeline fits with SMOTE on training data only."""
+    from src.train import build_smote_logistic_regression_pipeline
+
+    df = _make_dummy_dataset(100, fraud_count=10)
+    X, y = prepare_features_and_target(df)
+
+    smote_pipeline = build_smote_logistic_regression_pipeline(max_iter=200)
+    assert "preprocessor" in smote_pipeline.named_steps
+    assert "smote" in smote_pipeline.named_steps
+    assert "classifier" in smote_pipeline.named_steps
+
+    # Fit pipeline
+    smote_pipeline.fit(X, y)
+    assert hasattr(smote_pipeline.named_steps["classifier"], "coef_")
+
+    # Predict on test features - verify SMOTE does not alter test dimensions
+    y_pred = smote_pipeline.predict(X)
+    y_prob = smote_pipeline.predict_proba(X)
+    assert len(y_pred) == 100
+    assert y_prob.shape == (100, 2)
+    assert np.all(y_prob >= 0.0) and np.all(y_prob <= 1.0)
+
+
+def test_unweighted_logistic_regression_pipeline():
+    """Verify unweighted logistic regression operates with class_weight=None."""
+    df = _make_dummy_dataset(100, fraud_count=10)
+    X, y = prepare_features_and_target(df)
+
+    unweighted_pipeline = build_logistic_regression_pipeline(class_weight=None, max_iter=200)
+    assert unweighted_pipeline.named_steps["classifier"].class_weight is None
+
+    unweighted_pipeline.fit(X, y)
+    preds = unweighted_pipeline.predict(X)
+    assert len(preds) == 100

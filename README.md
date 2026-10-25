@@ -150,7 +150,11 @@ Fraud_Detection/
 │   ├── test_train_evaluate.py
 │   ├── test_risk_engine.py
 │   ├── test_predictions.py
-│   └── test_explainability.py
+│   ├── test_explainability.py
+│   └── test_dashboard.py           # Legacy Streamlit AppTest verification
+├── .streamlit/
+│   └── config.toml                 # Legacy Streamlit server & theme configuration
+├── app.py                          # Legacy Streamlit dashboard application (retained)
 ├── requirements.txt                # Python dependencies
 ├── PROJECT_PROGRESS.md             # Authoritative phase milestone tracking
 └── README.md                       # Comprehensive system documentation
@@ -327,13 +331,13 @@ Models were trained on an 80% stratified training partition (227,845 rows, 394 f
 
 | Model Architecture | PR-AUC (Primary) | Recall | Precision | F1-Score | ROC-AUC | False Positives |
 |---|---|---|---|---|---|---|
-| **Random Forest (Balanced Champion)** | **0.8541** | **0.8469** | **0.7281** | **0.7830** | **0.9702** | **31** |
-| XGBoost (scale_pos_weight) | 0.8415 | 0.8163 | 0.8889 | 0.8511 | 0.9790 | 10 |
+| **Random Forest (Balanced Champion)** | **0.8462** | **0.8469** | **0.7217** | **0.7793** | **0.9735** | **32** |
+| XGBoost (scale_pos_weight) | 0.8253 | 0.7755 | 0.9048 | 0.8352 | 0.9612 | 8 |
 | Baseline Logistic Regression (Balanced) | 0.7175 | 0.9184 | 0.0609 | 0.1142 | 0.9720 | 1,388 |
 | Logistic Regression + SMOTE | 0.7251 | 0.9184 | 0.0628 | 0.1176 | 0.9744 | 1,342 |
 
 ### Why Random Forest is the Champion Model:
-While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it produces **1,388 false positives** (precision of only 6.09%), causing massive operational alert fatigue. Random Forest achieves **84.69% recall with only 31 false positives** (72.81% precision), reducing false alarms by **97.7%** and achieving the highest holdout **PR-AUC of 0.8541**.
+While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it produces **1,388 false positives** (precision of only 6.09%), causing severe operational alert fatigue. Random Forest achieves **84.69% recall with only 32 false positives** (72.17% precision), reducing false alarms by **97.7%** (from 1,388 down to 32) and achieving the highest holdout **PR-AUC of 0.8462** on the unseen test split.
 
 ---
 
@@ -344,8 +348,8 @@ While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it prod
 .\.venv\Scripts\python.exe -m pytest tests backend/tests -v
 ```
 **Results**:
-- **79 of 79 tests PASSED** in 16.76s (100% pass rate).
-- Tests cover: configuration paths, data validation & schema checking, leakage-free preprocessing, train/eval pipelines, risk threshold boundaries, predictions engine, SHAP attribution math, FastAPI endpoints, CORS preflight, CSV batch uploading, and error handling.
+- **84 of 84 tests PASSED** in 26.82s (100% pass rate).
+- Tests cover: configuration paths, data validation & schema checking, leakage-free preprocessing, train/eval pipelines, risk threshold boundaries, predictions engine, SHAP attribution math, FastAPI endpoints, CORS preflight, CSV batch uploading, and legacy Streamlit AppTest verification.
 
 ### Frontend Quality Checks (TypeScript & Linter)
 ```bash

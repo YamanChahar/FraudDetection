@@ -61,12 +61,18 @@ export const Overview: React.FC = () => {
 
   // Format benchmark data for Recharts
   const chartData = metrics?.models
-    ? Object.entries(metrics.models).map(([name, vals]) => ({
-        name: name.replace("Classifier", "").trim(),
-        "PR-AUC": parseFloat(((vals.pr_auc || vals.average_precision || 0) * 100).toFixed(2)),
-        "ROC-AUC": parseFloat(((vals.roc_auc || 0) * 100).toFixed(2)),
-        "F1-Score": parseFloat(((vals.f1 || 0) * 100).toFixed(2)),
-      }))
+    ? Object.entries(metrics.models).map(([key, val]: [string, any]) => {
+        const m = val.metrics || val;
+        const displayName = val.model_name
+          ? val.model_name.replace(" (Balanced)", "").replace(" (scale_pos_weight)", "").trim()
+          : key.replace("_", " ").toUpperCase();
+        return {
+          name: displayName,
+          "PR-AUC": parseFloat(((m.average_precision_pr_auc || m.pr_auc || m.average_precision || 0) * 100).toFixed(2)),
+          "ROC-AUC": parseFloat(((m.roc_auc || 0) * 100).toFixed(2)),
+          "F1-Score": parseFloat(((m.f1_score || m.f1 || 0) * 100).toFixed(2)),
+        };
+      })
     : [];
 
   return (
@@ -134,11 +140,11 @@ export const Overview: React.FC = () => {
           <div className="text-2xl font-bold font-mono text-white">
             {metrics?.selected_model?.pr_auc
               ? metrics.selected_model.pr_auc.toFixed(4)
-              : "0.8541"}
+              : "0.8462"}
           </div>
           <div className="flex items-center gap-1.5 mt-2 text-xs text-navy-300">
             <span className="text-risk-low font-medium">Champion</span>
-            <span>vs 0.7490 Baseline LR</span>
+            <span>vs 0.7175 Baseline LR</span>
           </div>
         </div>
 

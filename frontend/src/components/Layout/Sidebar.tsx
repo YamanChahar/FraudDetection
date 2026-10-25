@@ -136,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
           <div className="text-xs text-white font-medium flex items-center justify-between">
             <span>Random Forest</span>
-            <span className="text-[11px] text-risk-low font-mono font-semibold">PR-AUC 0.8541</span>
+            <span className="text-[11px] text-risk-low font-mono font-semibold">PR-AUC 0.8462</span>
           </div>
           <div className="flex items-center gap-2 pt-1 border-t border-navy-800 text-[11px] text-navy-400">
             <Layers className="w-3 h-3 text-navy-400" />

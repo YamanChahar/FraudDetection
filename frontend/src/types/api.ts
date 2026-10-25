@@ -73,37 +73,54 @@ export interface ModelInfoResponse {
 
 export interface ModelMetricsResponse {
   selected_model: {
+    id?: string;
     name: string;
-    selection_reason: string;
-    pr_auc: number;
-    roc_auc: number;
-    f1: number;
-    precision: number;
-    recall: number;
-    confusion_matrix: {
-      tn: number;
-      fp: number;
-      fn: number;
-      tp: number;
+    selection_reason?: string;
+    artifact_path?: string;
+    pr_auc?: number;
+    roc_auc?: number;
+    f1?: number;
+    precision?: number;
+    recall?: number;
+    confusion_matrix?: {
+      tn?: number;
+      fp?: number;
+      fn?: number;
+      tp?: number;
+      true_negatives?: number;
+      false_positives?: number;
+      false_negatives?: number;
+      true_positives?: number;
+      [key: string]: any;
     };
+    [key: string]: any;
   };
   models: Record<
     string,
     {
-      pr_auc: number;
-      roc_auc: number;
-      f1: number;
-      precision: number;
-      recall: number;
+      pr_auc?: number;
+      roc_auc?: number;
+      f1?: number;
+      precision?: number;
+      recall?: number;
       average_precision?: number;
+      confusion_matrix?: {
+        tn?: number;
+        fp?: number;
+        fn?: number;
+        tp?: number;
+        true_negatives?: number;
+        false_positives?: number;
+        false_negatives?: number;
+        true_positives?: number;
+        [key: string]: any;
+      };
+      metrics?: Record<string, any>;
+      model_name?: string;
+      [key: string]: any;
     }
   >;
-  split_summary: {
-    train_size: number;
-    test_size: number;
-    total_size: number;
-    test_fraud_rate: number;
-  };
+  split_summary: Record<string, any>;
 }
 
 export interface FeatureContribution {

@@ -34,9 +34,16 @@ reports/*
 # Environment Variables & Secrets
 .env
 .env.*
+!.env.example
+
+# Frontend & Node Artifacts
+node_modules/
+frontend/dist/
+frontend/node_modules/
 
 # OS and IDE files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+

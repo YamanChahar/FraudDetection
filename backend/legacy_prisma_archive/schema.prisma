@@ -1,0 +1,274 @@
+// TRACE — Prisma Relational Database Schema (Phase 2)
+// PostgreSQL 15+ Data Layer for Transaction Risk & Fraud Analysis Platform
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum Role {
+  ANALYST
+  INVESTIGATOR
+  LEAD
+  ADMIN
+}
+
+enum ModelStatus {
+  DEVELOPMENT
+  VALIDATION
+  CHAMPION
+  CHALLENGER
+  ARCHIVED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  IN_REVIEW
+  ESCALATED
+  RESOLVED
+  DISMISSED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// -----------------------------------------------------------------------------
+// Core Models
+// -----------------------------------------------------------------------------
+
+/// System operators, analysts, investigators, and platform administrators
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(150)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         Role     @default(ANALYST)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  refreshTokens        RefreshToken[]
+  transactions         Transaction[]
+  assignedAlerts       FraudAlert[]          @relation("AssignedAlerts")
+  investigationRecords InvestigationRecord[]
+  datasetJobs          DatasetTestingJob[]
+  auditLogs            AuditLog[]
+
+  @@index([email])
+  @@index([role, isActive])
+  @@map("users")
+}
+
+/// Cryptographically hashed refresh tokens supporting rotation and revocation
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt, revokedAt])
+  @@map("refresh_tokens")
+}
+
+/// Ingested and simulated financial transactions with flexible schema support
+model Transaction {
+  id                    String   @id @default(uuid()) @db.Uuid
+  externalTransactionId String   @unique @map("external_transaction_id") @db.VarChar(64)
+  amount                Decimal  @db.Decimal(14, 2)
+  currency              String   @default("USD") @db.VarChar(3)
+  transactionTimestamp  DateTime @map("transaction_timestamp") @db.Timestamptz
+
+  // Optional domain-specific fields (supports heterogeneous transaction formats)
+  merchantId       String? @map("merchant_id") @db.VarChar(64)
+  merchantName     String? @map("merchant_name") @db.VarChar(150)
+  merchantCategory String? @map("merchant_category") @db.VarChar(64)
+  customerId       String? @map("customer_id") @db.VarChar(64)
+  channel          String? @db.VarChar(32)
+
+  // Structured raw metadata (PCA features V1-V28, velocity features, custom payload)
+  metadata Json @default("{}") @map("metadata")
+
+  // Submitter / origin reference
+  userId    String?  @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  predictions Prediction[]
+  fraudAlerts FraudAlert[]
+
+  @@index([transactionTimestamp(sort: Desc)])
+  @@index([externalTransactionId])
+  @@index([customerId, transactionTimestamp(sort: Desc)])
+  @@index([merchantCategory])
+  @@index([amount])
+  @@map("transactions")
+}
+
+/// Registry of machine learning models and governance metadata
+model ModelVersion {
+  id                String      @id @default(uuid()) @db.Uuid
+  name              String      @db.VarChar(100)
+  version           String      @unique @db.VarChar(32)
+  algorithm         String      @db.VarChar(64)
+  status            ModelStatus @default(DEVELOPMENT)
+  metrics           Json        @default("{}") @map("metrics")
+  artifactReference String      @map("artifact_reference") @db.VarChar(255)
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  predictions Prediction[]
+
+  @@index([status])
+  @@index([version])
+  @@map("model_versions")
+}
+
+/// Model-generated risk estimation (statistical hypothesis, not confirmed fraud)
+model Prediction {
+  id               String    @id @default(uuid()) @db.Uuid
+  transactionId    String    @map("transaction_id") @db.Uuid
+  modelVersionId   String    @map("model_version_id") @db.Uuid
+  fraudProbability Decimal   @map("fraud_probability") @db.Decimal(6, 5)
+  riskScore        Int       @map("risk_score")
+  riskLevel        RiskLevel @map("risk_level")
+  predictionStatus String    @default("COMPLETED") @map("prediction_status") @db.VarChar(32)
+  explanationData  Json      @default("{}") @map("explanation_data")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relationships
+  transaction  Transaction  @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  modelVersion ModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  fraudAlerts  FraudAlert[]
+
+  @@index([transactionId])
+  @@index([modelVersionId])
+  @@index([riskScore(sort: Desc)])
+  @@index([riskLevel])
+  @@map("predictions")
+}
+
+/// System-generated alerts triggered when risk exceeds operational thresholds
+model FraudAlert {
+  id            String        @id @default(uuid()) @db.Uuid
+  transactionId String        @map("transaction_id") @db.Uuid
+  predictionId  String?       @map("prediction_id") @db.Uuid
+  severity      AlertSeverity @default(MEDIUM)
+  status        AlertStatus   @default(OPEN)
+  assignedToId  String?       @map("assigned_to_id") @db.Uuid
+  description   String        @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  resolvedAt    DateTime?     @map("resolved_at") @db.Timestamptz
+
+  // Relationships
+  transaction          Transaction           @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  prediction           Prediction?           @relation(fields: [predictionId], references: [id], onDelete: SetNull)
+  assignedTo           User?                 @relation("AssignedAlerts", fields: [assignedToId], references: [id], onDelete: SetNull)
+  investigationRecords InvestigationRecord[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([severity])
+  @@index([assignedToId, status])
+  @@map("fraud_alerts")
+}
+
+/// Human investigator determinations and resolution audit trail
+model InvestigationRecord {
+  id                  String    @id @default(uuid()) @db.Uuid
+  alertId             String    @map("alert_id") @db.Uuid
+  investigatorId      String    @map("investigator_id") @db.Uuid
+  investigationStatus String    @default("IN_PROGRESS") @map("investigation_status") @db.VarChar(32)
+  findings            String    @db.Text
+  resolution          String?   @db.Text
+  reviewedAt          DateTime? @map("reviewed_at") @db.Timestamptz
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  alert        FraudAlert @relation(fields: [alertId], references: [id], onDelete: Restrict)
+  investigator User       @relation(fields: [investigatorId], references: [id], onDelete: Restrict)
+
+  @@index([alertId, createdAt(sort: Desc)])
+  @@index([investigatorId])
+  @@map("investigation_records")
+}
+
+/// Portfolio stress-testing and asynchronous batch job execution records
+model DatasetTestingJob {
+  id               String    @id @default(uuid()) @db.Uuid
+  datasetName      String    @map("dataset_name") @db.VarChar(255)
+  datasetFormat    String    @map("dataset_format") @db.VarChar(32)
+  status           JobStatus @default(QUEUED)
+  totalRecords     Int       @default(0) @map("total_records")
+  processedRecords Int       @default(0) @map("processed_records")
+  failedRecords    Int       @default(0) @map("failed_records")
+  results          Json      @default("{}") @map("results")
+  errorDetails     String?   @map("error_details") @db.Text
+  createdById      String?   @map("created_by_id") @db.Uuid
+  startedAt        DateTime? @map("started_at") @db.Timestamptz
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relationships
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([createdById])
+  @@map("dataset_testing_jobs")
+}
+
+/// Append-only security and operational audit trail for system traceability
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(64)
+  entityType String   @map("entity_type") @db.VarChar(64)
+  entityId   String?  @map("entity_id") @db.VarChar(64)
+  metadata   Json     @default("{}") @map("metadata")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relationships
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

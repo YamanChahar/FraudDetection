@@ -1,0 +1,80 @@
+{
+  "model_name": "Logistic Regression",
+  "model_version": "v1.2.0-champion",
+  "algorithm": "LOGISTIC_REGRESSION",
+  "metrics": {
+    "precision": 0.5968,
+    "recall": 1.0,
+    "f1_score": 0.7475,
+    "roc_auc": 0.9995,
+    "pr_auc": 0.988,
+    "false_positive_rate": 0.0206,
+    "false_negative_rate": 0.0,
+    "confusion_matrix": {
+      "true_negatives": 1188,
+      "false_positives": 25,
+      "false_negatives": 0,
+      "true_positives": 37
+    }
+  },
+  "all_candidates": [
+    {
+      "name": "Logistic Regression",
+      "algorithm": "LOGISTIC_REGRESSION",
+      "metrics": {
+        "precision": 0.5968,
+        "recall": 1.0,
+        "f1_score": 0.7475,
+        "roc_auc": 0.9995,
+        "pr_auc": 0.988,
+        "false_positive_rate": 0.0206,
+        "false_negative_rate": 0.0,
+        "confusion_matrix": {
+          "true_negatives": 1188,
+          "false_positives": 25,
+          "false_negatives": 0,
+          "true_positives": 37
+        }
+      }
+    },
+    {
+      "name": "Random Forest",
+      "algorithm": "RANDOM_FOREST",
+      "metrics": {
+        "precision": 1.0,
+        "recall": 0.8378,
+        "f1_score": 0.9118,
+        "roc_auc": 0.9996,
+        "pr_auc": 0.9869,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.1622,
+        "confusion_matrix": {
+          "true_negatives": 1213,
+          "false_positives": 0,
+          "false_negatives": 6,
+          "true_positives": 31
+        }
+      }
+    },
+    {
+      "name": "XGBoost Classifier",
+      "algorithm": "XGBOOST",
+      "metrics": {
+        "precision": 0.8718,
+        "recall": 0.9189,
+        "f1_score": 0.8947,
+        "roc_auc": 0.9986,
+        "pr_auc": 0.9678,
+        "false_positive_rate": 0.0041,
+        "false_negative_rate": 0.0811,
+        "confusion_matrix": {
+          "true_negatives": 1208,
+          "false_positives": 5,
+          "false_negatives": 3,
+          "true_positives": 34
+        }
+      }
+    }
+  ],
+  "created_at": "2026-10-27T19:15:31Z"
+}

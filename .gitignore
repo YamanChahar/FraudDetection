@@ -1,49 +1,60 @@
-# Python Virtual Environments
+# Dependency directories
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python environments & caches
 .venv/
 venv/
 ENV/
 env/
-
-# Python Bytecode and Cache
 __pycache__/
+*/__pycache__/
+*/*/__pycache__/
 *.py[cod]
 *$py.class
+*.pytest_cache/
 .pytest_cache/
 
-# Datasets and Large Artifacts
-data/*
-!data/.gitkeep
-!data/README.md
-!data/sample_batch_transactions.csv
-
-# Model Artifacts
-models/*
-!models/.gitkeep
-
-# Evaluation and Generated Reports
-reports/*
-!reports/.gitkeep
-
-# Jupyter Notebook Checkpoints
-.ipynb_checkpoints/
-*/.ipynb_checkpoints/*
-
-# Streamlit Local Configuration & Secrets
-.streamlit/secrets.toml
-
-# Environment Variables & Secrets
+# Environment files & secrets
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
+*.env
+!*.env.example
+!**/.env.example
 
-# Frontend & Node Artifacts
-node_modules/
-frontend/dist/
-frontend/node_modules/
+# Build and distribution directories
+dist/
+build/
+*/dist/
+*/build/
 
-# OS and IDE files
-.DS_Store
-Thumbs.db
+# IDE & Editor artifacts
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
+# Logs and runtime artifacts
+logs/
+*.log
+*.sqlite
+*.sqlite3
+
+# Large dataset & binary artifacts
+*.parquet
+*.h5
+*.pkl
+*.joblib
+!ml-service/models/*.joblib
+!ml-service/models/*.json
+!models/.gitkeep
+!*/models/.gitkeep
+!preprocessing/.gitkeep
+!*/preprocessing/.gitkeep

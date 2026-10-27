@@ -1,385 +1,228 @@
-# Fraud Detection & Risk Assessment System Using Machine Learning
+# TRACE — Transaction Risk & Fraud Analysis Platform
 
-A production-grade, full-stack Machine Learning system for real-time credit card fraud probability estimation, explainable AI risk scoring, and high-throughput batch evaluation on severely imbalanced transaction streams.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-v20%20%7C%20v24-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-19.0-blue.svg)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-teal.svg)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0+-brightgreen.svg)](https://www.mongodb.com/)
+[![SHAP](https://img.shields.io/badge/Explainability-True%20SHAP-orange.svg)](https://shap.readthedocs.io/)
 
----
-
-## 1. Executive Summary & Core Capabilities
-
-Financial credit card fraud constitutes a severe class-imbalance problem: fraudulent transactions account for fewer than 0.18% of all operations. Naive machine learning models optimizing for standard accuracy fail catastrophically by classifying every transaction as legitimate (achieving 99.82% accuracy while detecting 0% of fraud).
-
-This system addresses the challenge through a production-grade decoupled architecture:
-- **FastAPI Async Backend Service**: High-concurrency inference engine providing single-transaction prediction, high-throughput CSV batch evaluation, SHAP explainability endpoints, and transaction exploration APIs.
-- **Modern React + TypeScript Frontend (FraudLens)**: Institutional-grade fintech dashboard built with Vite, Tailwind CSS, Lucide icons, and Recharts, offering real-time risk gauges, interactive SHAP waterfall attributions, custom threshold tuning, and accessible WCAG 2.1 AA UI components.
-- **Machine Learning Core**: Leakage-free preprocessing (`RobustScaler`), class-imbalance mitigation, calibrated probability estimation, and a 3-tier risk policy engine mapping raw model probabilities to business action tiers (Approved, Step-Up Verification, Decline).
-- **Explainable AI (SHAP)**: Fast TreeExplainer local feature attributions and global beeswarm importance visualizations explaining exact risk drivers.
+TRACE is an enterprise-grade financial fraud detection and risk analysis platform. Designed for risk analysts, compliance officers, and fintech operators, TRACE evaluates financial transactions in real time, computes calibrated 0–100 risk scores, triages suspicious activity into prioritized investigation queues, and provides instance-level explainability through true Shapley (SHAP) feature attributions.
 
 ---
 
-## 2. System Architecture & Data Flow
+## 1. Problem Statement & Solution
 
-```mermaid
-flowchart TD
-    subgraph Client ["Client Layer (Browser)"]
-        UI["React 19 + TypeScript (FraudLens)"]
-        RT["React Router (6 Routes)"]
-        RC["Recharts Visualizations"]
-    end
+### The Challenge
+Modern electronic payments operate at massive scale with low transaction margins. Traditional rule-based fraud detection engines struggle with:
+1. **High False Positive Rates:** Legitimate cardholders are inconvenienced by rigid heuristics, leading to cart abandonment and merchant loss.
+2. **Black-Box AI Models:** Complex neural networks or gradient-boosted trees flag suspicious activity without explaining *why*, leaving compliance analysts unable to justify transaction holds to regulators or cardholders.
+3. **Audit Incompatibility:** Financial compliance standards require immutable records of human determinations versus automated machine learning outputs.
 
-    subgraph Gateway ["API Service Layer (FastAPI / Uvicorn :8000)"]
-        CORS["CORS Middleware (Allow Origin 5173)"]
-        Val["Pydantic Request Validation"]
-        API_Single["POST /api/predict"]
-        API_Batch["POST /api/predict/batch"]
-        API_LocalSHAP["POST /api/explanations/local"]
-        API_GlobalSHAP["GET /api/explanations/global"]
-        API_Plot["GET /api/explanations/summary-plot"]
-        API_Metrics["GET /api/metrics"]
-        API_Explorer["GET /api/transactions/explorer"]
-    end
+### The TRACE Solution
+TRACE bridges modern statistical machine learning with regulatory auditability:
+- **Calibrated Multi-Model Pipeline:** Real-time scoring using high-recall champion models (Logistic Regression, Random Forest, XGBoost) specifically trained on severe class imbalance.
+- **True SHAP Explainability:** Decomposes risk into exact directional factor pushes (`INCREASES_RISK` vs `DECREASES_RISK`), giving analysts plain-English narrative summaries of primary anomaly drivers.
+- **Audit-Compliant Separation:** Clear architectural boundaries between statistical ML estimates (`Prediction`) and legally binding human findings (`InvestigationRecord`), enforced through append-only database immutability.
 
-    subgraph ML ["Machine Learning Pipeline & Engine"]
-        PP["RobustScaler (Time & Amount)"]
-        Model["Trained Champion Model (Random Forest / XGBoost)"]
-        Risk["Risk Scoring Engine (T1=0.30, T2=0.70)"]
-        SHAP["SHAP TreeExplainer"]
-    end
+---
 
-    subgraph Data ["Data & Artifact Storage"]
-        Art["models/best_model.joblib"]
-        Rep["reports/comparison_report.json"]
-        CSV["data/creditcard.csv"]
-    end
+## 2. Major Features
 
-    UI -->|HTTP / JSON| Gateway
-    Gateway --> Val
-    Val --> ML
-    ML --> Art
-    ML --> Rep
-    API_Explorer --> CSV
-```
-
-### Data Flow Lifecycle:
-1. **Request Ingestion**: Client submits transaction features (`Time`, `Amount`, `V1`–`V28`) to `/api/predict`.
-2. **Schema Validation**: Pydantic validates data types, non-null constraints, and finite numerical values.
-3. **Pipeline Transformation**: `RobustScaler` scales `Time` and `Amount` using pre-fitted median and IQR parameters; PCA features (`V1`–`V28`) pass through without leakage.
-4. **Model Inference**: Serialized champion pipeline outputs calibrated fraud probability $P(\text{Fraud})$.
-5. **Risk Assessment**: `RiskEngine` computes a $0\text{--}100$ score and categorizes into Low ($<0.30$), Medium ($0.30\le P < 0.70$), or High Risk ($\ge 0.70$).
-6. **Local Explainability**: `SHAP TreeExplainer` computes exact local feature contributions ($\phi_i$) indicating why the transaction was flagged.
-7. **Telemetry & Response**: JSON payload returned to React UI for rendering in telemetry meters and waterfall charts.
+1. **Executive Overview Dashboard:** Live KPI cards (Total Volume, Flagged Anomalies, Pending Investigations, Exposure), 14-day transaction volume trend charts, and real-time risk tier distribution breakdowns.
+2. **Interactive Fraud Testing Lab:** Interactive single-transaction simulator with pre-loaded benchmark scenarios (*Typical Retail*, *High-Value Transfer*, *Geo-Velocity Anomaly*), PCA slider adjustments, real-time risk gauges, operational policy recommendations, and SHAP factor attribution bars.
+3. **Transaction Explorer:** Filterable data grid supporting search, channel filtering, risk level sorting, server-side pagination, and a slide-out transaction inspection drawer with full metadata.
+4. **Fraud Alerts & Human Triage:** Severity-ranked alert queues with role-guarded status management (`OPEN` $\rightarrow$ `IN_REVIEW` $\rightarrow$ `ESCALATED` / `RESOLVED` / `DISMISSED`) and investigation note recording.
+5. **Model Performance & Candidate Benchmarks:** Live metrics display (ROC-AUC, PR-AUC, Precision, Recall, F1 score) and side-by-side comparison tables against candidate models evaluated on genuine held-out test data.
+6. **Dataset Batch Testing:** Asynchronous portfolio stress-testing supporting CSV uploads or pre-loaded benchmark batches (up to 25,000 records) with chunked inference, live progress tracking, and CSV report export.
+7. **Platform Administration & Immutable Audit Trail:** Role-based access control management and read-only viewer for the tamper-resistant, append-only `AuditLog` collection.
 
 ---
 
 ## 3. Technology Stack
 
-### Backend & Machine Learning
-- **Python**: 3.13.1
-- **API Framework**: FastAPI 0.135+, Uvicorn 0.43+
-- **Data & ML**: Scikit-Learn 1.8+, XGBoost 3.2+, Imbalanced-Learn 0.14+, Pandas 2.3+, NumPy 2.4+
-- **Explainability**: SHAP 0.51+, Matplotlib 3.10+ (Agg backend)
-- **Serialization**: Joblib 1.5+
-- **Validation**: Pydantic v2
-- **Testing**: Pytest 9.1+, Starlette TestClient, AnyIO
-
-### Frontend & Dashboard
-- **Runtime & Tooling**: Node.js v24+, Vite 8.3+, TypeScript 5.9+
-- **UI Library**: React 19, React Router DOM 7.5+
-- **Styling**: Tailwind CSS v4, Lucide React icons
-- **Charts**: Recharts 2.15+
-- **Linting**: Oxlint
+- **Client Tier (`frontend/`):** React 19, Vite, React Router v7, Axios, Lucide Icons. Designed with custom financial Vanilla CSS (Warm Ivory `#F5F2EA`, Deep Charcoal `#25251F`, Terracotta `#B65D3A`, Sage `#2E5A36`, Ochre `#8F5D18`, Rust `#A83824`). Strictly no generic default templates.
+- **Gateway & Orchestration Tier (`backend/`):** Node.js, Express, Mongoose ODM, Zod runtime validation, Helmet, CORS, Morgan request logging with correlation IDs (`X-Request-Id`).
+- **Machine Learning Inference Tier (`ml-service/`):** Python 3.13, FastAPI, Uvicorn, Scikit-learn, XGBoost, SHAP, Pydantic v2.
+- **Persistence Tier:** MongoDB Community Server 7.0+ (with automated in-memory `mongodb-memory-server` development fallback).
 
 ---
 
-## 4. Repository Structure
+## 4. Architecture Overview
 
 ```
-Fraud_Detection/
-├── backend/                        # Production FastAPI Service
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                 # FastAPI application & route declarations
-│   │   └── schemas.py              # Pydantic request/response schemas
-│   └── tests/
-│       ├── test_api.py             # 20 automated integration & contract tests
-│       └── __init__.py
-├── frontend/                       # Institutional React + TypeScript Website
-│   ├── src/
-│   │   ├── components/             # Reusable UI components (Navbar, Footer, etc.)
-│   │   ├── pages/                  # 6 Core Application Routes + 404
-│   │   │   ├── Overview.tsx        # System KPIs, status, and benchmark charts
-│   │   │   ├── Analyze.tsx         # Single transaction scoring & SHAP waterfall
-│   │   │   ├── BatchAnalysis.tsx   # CSV upload, batch processing, & export
-│   │   │   ├── Transactions.tsx    # Transaction audit explorer & filter modal
-│   │   │   ├── ModelInsights.tsx   # Model comparison table & SHAP plot
-│   │   │   ├── About.tsx           # Model card & regulatory compliance
-│   │   │   └── NotFound.tsx        # Fallback 404 route
-│   │   ├── services/
-│   │   │   └── api.ts              # Typed API client with custom error handling
-│   │   ├── types/
-│   │   │   └── index.ts            # TypeScript interfaces & API contracts
-│   │   ├── App.tsx                 # Main layout & router definition
-│   │   └── main.tsx                # Client entry point
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── data/
-│   ├── creditcard.csv              # Primary ULB dataset (ignored in git)
-│   ├── sample_batch.csv            # Sample test batch for validation
-│   └── README.md
-├── models/
-│   ├── best_model.joblib           # Serialized Champion Model Pipeline
-│   └── .gitkeep
-├── reports/
-│   ├── comparison_report.json      # Verified metrics across all candidate models
-│   ├── baseline_report.json        # Baseline Logistic Regression evaluation
-│   ├── pr_curve_comparison.png     # Precision-Recall curve comparison artifact
-│   └── confusion_matrix_*.png      # Confusion matrix plots
-├── src/                            # Machine Learning & Inference Core
-│   ├── config.py                   # Centralized configuration & directory paths
-│   ├── data_validation.py          # Dataset schema and integrity verification
-│   ├── preprocessing.py            # Leakage-free preprocessing pipeline
-│   ├── train.py                    # Stratified training routines
-│   ├── evaluate.py                 # Imbalance-aware evaluation protocols
-│   ├── predict.py                  # Production inference predictor
-│   ├── risk_engine.py              # Calibrated risk scoring engine
-│   └── explainability.py           # SHAP TreeExplainer & waterfall generator
-├── tests/                          # Root Pytest Suite (ML Pipeline & Core)
-│   ├── test_config.py
-│   ├── test_data_validation.py
-│   ├── test_preprocessing.py
-│   ├── test_train_evaluate.py
-│   ├── test_risk_engine.py
-│   ├── test_predictions.py
-│   ├── test_explainability.py
-│   └── test_dashboard.py           # Legacy Streamlit AppTest verification
-├── .streamlit/
-│   └── config.toml                 # Legacy Streamlit server & theme configuration
-├── app.py                          # Legacy Streamlit dashboard application (retained)
-├── requirements.txt                # Python dependencies
-├── PROJECT_PROGRESS.md             # Authoritative phase milestone tracking
-└── README.md                       # Comprehensive system documentation
+[ React Client (Port: 5173) ]
+           │
+           │ (HTTP / JSON via Axios with Bearer JWT)
+           ▼
+[ Node.js + Express API Gateway (Port: 4000) ]
+           │
+           ├── (Mongoose ODM) ─────────────> [ MongoDB Database (Port: 27017) ]
+           │                                   (trace_dev / Embedded Dev Fallback)
+           │
+           │ (Internal HTTP + X-Internal-Service-Key + 1500ms timeout)
+           ▼
+[ Python FastAPI ML Service (Port: 8000) ]
+           ├── Champion Model (Logistic Regression v1.2.0-champion)
+           └── True SHAP Tree/Linear Explainer (Instance Factor Decomposition)
 ```
 
 ---
 
-## 5. Dataset & Target Variable
+## 5. Application Views
 
-The system is trained and evaluated on the **ULB Machine Learning Group Credit Card Fraud Detection** benchmark dataset:
-- **Total Transactions**: 284,807 transactions recorded over a two-day period in September 2013 by European cardholders.
-- **Target Variable**: `Class` (Binary classification: `0` = Legitimate, `1` = Fraudulent).
-- **Class Distribution**:
-  - Legitimate (`Class = 0`): 284,315 transactions (99.8273%)
-  - Fraudulent (`Class = 1`): 492 transactions (0.1727%)
-  - Imbalance Ratio: **577.88 : 1**
-- **Features**:
-  - `Time`: Elapsed seconds between this transaction and the first transaction in the dataset.
-  - `Amount`: Transaction amount in Euros (EUR).
-  - `V1`–`V28`: 28 numerical principal components obtained via PCA to protect confidential cardholder identities.
+> *Note: Placeholders for visual reference. Capture and add screenshots into `docs/screenshots/`.*
+
+| View | Description | Screenshot Location |
+| :--- | :--- | :--- |
+| **Overview Dashboard** | Real-time transaction volume, risk breakdown, and active alerts | `docs/screenshots/01_dashboard.png` |
+| **Fraud Testing Lab** | Real-time single transaction scoring, risk gauge, and SHAP bars | `docs/screenshots/02_testing_lab.png` |
+| **Transaction Explorer** | Searchable transactions table with slide-out inspection drawer | `docs/screenshots/03_transactions.png` |
+| **Alerts & Triage** | Prioritized alert queue and human investigation modal | `docs/screenshots/04_alerts.png` |
+| **Model Performance** | Confusion matrix and candidate model benchmark comparison | `docs/screenshots/05_model_performance.png` |
+| **Batch Testing** | Asynchronous CSV dataset portfolio stress-testing | `docs/screenshots/06_batch_testing.png` |
 
 ---
 
-## 6. Setup & Installation Guide
+## 6. Installation & Local Setup
 
 ### Prerequisites
-- **Python**: 3.10+ (Verified on 3.13.1)
-- **Node.js**: 20.0+ (Verified on 24.17.0)
-- **Git**: 2.20+
+- Node.js v20+ or v24+
+- Python 3.11+
+- MongoDB Community Server 7.0+ (Optional; backend includes automatic embedded memory fallback)
 
 ### Step 1: Clone Repository
 ```bash
-git clone <repository-url>
-cd Fraud_Detection
+git clone https://github.com/your-username/trace-fraud-platform.git
+cd trace-fraud-platform
 ```
 
-### Step 2: Configure Python Virtual Environment & Install Dependencies
+### Step 2: Environment Configuration
+Copy template environment files:
 ```bash
-# Windows (PowerShell):
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+cp ml-service/.env.example ml-service/.env
+```
+
+### Step 3: Install Dependencies
+```bash
+# Backend
+cd backend && npm install && cd ..
+
+# Frontend
+cd frontend && npm install && cd ..
+
+# ML Service (create and activate virtualenv)
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# macOS / Linux:
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Upgrade pip & install backend dependencies:
-pip install --upgrade pip
-pip install -r requirements.txt
+# Windows: .venv\Scripts\Activate.ps1 | Unix: source .venv/bin/activate
+pip install -r ml-service/requirements.txt
 ```
 
-### Step 3: Install Frontend Dependencies
+### Step 4: Model Training & Artifact Generation
+To train and benchmark candidate models and serialize the champion artifact:
 ```bash
-cd frontend
-npm install
+cd ml-service
+python -m app.core.trainer
 cd ..
 ```
 
-### Step 4: Environment Variables Configuration
-The frontend connects to the backend through `VITE_API_BASE_URL`.
-- A template file exists at `frontend/.env.example`.
-- Create a local configuration:
+### Step 5: Start All Services
+Open three terminal windows:
+
 ```bash
-# In frontend/.env:
-VITE_API_BASE_URL=http://localhost:8000
-```
-If omitted, the frontend automatically defaults to `http://localhost:8000`.
+# Terminal 1 — Python ML Service (Port 8000)
+cd ml-service
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
----
+# Terminal 2 — Backend API Gateway (Port 4000)
+cd backend
+npm run dev
 
-## 7. Running the System
-
-### Option A: Run Backend Service (FastAPI)
-From the repository root:
-```bash
-# Start FastAPI with Uvicorn auto-reload:
-.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-- Interactive Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc Documentation: `http://127.0.0.1:8000/redoc`
-- Health Endpoint: `http://127.0.0.1:8000/api/health`
-
-### Option B: Run Frontend Dashboard (Vite)
-In a separate terminal:
-```bash
+# Terminal 3 — Frontend Web App (Port 5173)
 cd frontend
 npm run dev
 ```
-- Open your browser at: `http://127.0.0.1:5173`
+
+Navigate to `http://localhost:5173` to access the application.
 
 ---
 
-## 8. Available API Endpoints & Request Contracts
+## 7. Automated Testing
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Service health status, model load status, and version |
-| `GET` | `/api/model-info` | Metadata, champion model class, feature schema, and thresholds |
-| `GET` | `/api/metrics` | Model comparison metrics (PR-AUC, ROC-AUC, Recall, Precision, F1) |
-| `POST` | `/api/predict` | Single transaction fraud prediction and risk score assessment |
-| `POST` | `/api/predict/batch` | High-throughput CSV file batch scoring and summary statistics |
-| `GET` | `/api/sample-batch` | Download valid sample CSV with legitimate and fraud rows |
-| `POST` | `/api/explanations/local` | SHAP local feature attribution waterfall values |
-| `GET` | `/api/explanations/global` | Top 30 globally ranked SHAP feature importance values |
-| `GET` | `/api/explanations/summary-plot` | Precomputed global SHAP beeswarm summary plot (PNG image stream) |
-| `GET` | `/api/transactions/explorer` | Filterable evaluation dataset rows for auditing |
-
-### Example 1: Single Prediction (`POST /api/predict`)
-
-**Request Payload:**
-```json
-{
-  "features": {
-    "Time": 406.0,
-    "Amount": 1.0,
-    "V1": -2.31,
-    "V2": 1.95,
-    "V3": -1.61,
-    "V4": 3.99,
-    "V5": -0.52,
-    "V6": -1.43,
-    "V7": -2.54,
-    "V8": 1.39,
-    "V9": -2.77,
-    "V10": -2.77,
-    "V11": 3.20,
-    "V12": -2.90,
-    "V13": -0.60,
-    "V14": -4.29,
-    "V15": 0.39,
-    "V16": -1.14,
-    "V17": -2.83,
-    "V18": -0.01,
-    "V19": 0.42,
-    "V20": 0.13,
-    "V21": 0.52,
-    "V22": -0.04,
-    "V23": -0.47,
-    "V24": 0.32,
-    "V25": 0.04,
-    "V26": 0.18,
-    "V27": 0.26,
-    "V28": -0.14
-  },
-  "low_threshold": 0.30,
-  "high_threshold": 0.70
-}
-```
-
-**Response Payload (200 OK):**
-```json
-{
-  "fraud_probability": 0.9946,
-  "risk_score": 99,
-  "risk_category": "High Risk",
-  "operational_recommendation": "Immediate Interception: Severe fraud risk. Hold/decline transaction and alert cardholder.",
-  "model_name": "RandomForestClassifier",
-  "threshold_configuration": {
-    "low_threshold": 0.3,
-    "high_threshold": 0.7
-  },
-  "transaction_summary": {
-    "amount": 1.0,
-    "time": 406.0
-  }
-}
-```
-
----
-
-## 9. Machine Learning Evaluation & Model Benchmark
-
-Models were trained on an 80% stratified training partition (227,845 rows, 394 frauds) and evaluated on an isolated 20% holdout test partition (56,962 rows, 98 frauds) with zero data leakage:
-
-| Model Architecture | PR-AUC (Primary) | Recall | Precision | F1-Score | ROC-AUC | False Positives |
-|---|---|---|---|---|---|---|
-| **Random Forest (Balanced Champion)** | **0.8462** | **0.8469** | **0.7217** | **0.7793** | **0.9735** | **32** |
-| XGBoost (scale_pos_weight) | 0.8253 | 0.7755 | 0.9048 | 0.8352 | 0.9612 | 8 |
-| Baseline Logistic Regression (Balanced) | 0.7175 | 0.9184 | 0.0609 | 0.1142 | 0.9720 | 1,388 |
-| Logistic Regression + SMOTE | 0.7251 | 0.9184 | 0.0628 | 0.1176 | 0.9744 | 1,342 |
-
-### Why Random Forest is the Champion Model:
-While baseline Logistic Regression captures 90/98 frauds (91.8% recall), it produces **1,388 false positives** (precision of only 6.09%), causing severe operational alert fatigue. Random Forest achieves **84.69% recall with only 32 false positives** (72.17% precision), reducing false alarms by **97.7%** (from 1,388 down to 32) and achieving the highest holdout **PR-AUC of 0.8462** on the unseen test split.
-
----
-
-## 10. Automated Testing & Verification Results
-
-### Backend Test Suite (Pytest)
+### Backend Unit & Integration Tests (50 Tests)
 ```bash
-.\.venv\Scripts\python.exe -m pytest tests backend/tests -v
+cd backend
+npm test
 ```
-**Results**:
-- **84 of 84 tests PASSED** in 26.82s (100% pass rate).
-- Tests cover: configuration paths, data validation & schema checking, leakage-free preprocessing, train/eval pipelines, risk threshold boundaries, predictions engine, SHAP attribution math, FastAPI endpoints, CORS preflight, CSV batch uploading, and legacy Streamlit AppTest verification.
+*Coverage:* JWT rotation, reuse detection, RBAC permissions, E2E transaction flow, MongoDB persistence, Decimal128 handling, and exact risk boundary enforcement (0, 30, 31, 70, 71, 89, 90, 100).
 
-### Frontend Quality Checks (TypeScript & Linter)
+### Python ML Tests (14 Tests)
+```bash
+cd ml-service
+python -m pytest
+```
+*Coverage:* Health checks, single inference, batch vectorization, SHAP feature alignment, linear and tree explainer verification, and directional attribution.
+
+### Frontend Production Build
 ```bash
 cd frontend
-npm run lint
 npm run build
 ```
-**Results**:
-- **Oxlint**: 0 errors across 18 source files.
-- **TypeScript Compiler (`tsc -b`)**: 0 errors.
-- **Vite Production Bundle**: Successfully built in 3.20s (`dist/assets/index-*.js`, `dist/assets/index-*.css`).
-
-### End-to-End Integration Testing
-- Verified live communication between Vite frontend (`:5173`) and FastAPI backend (`:8000`).
-- Tested all 6 application routes, form submission, SHAP waterfall rendering, transaction modal preloading, batch CSV upload, and client-side 404 fallback.
-- Browser test recorded to: `e2e_verification_1792257993991.webp`.
+*Result:* 9.77s build (`dist/`, 129.5 kB gzip JS).
 
 ---
 
-## 11. Known Limitations & Production Deployment Roadmap
+## 8. Machine Learning Pipeline & True SHAP
 
-1. **In-Memory Batch Execution**:
-   - The current batch scoring endpoint processes uploaded CSV files directly in memory via Pandas.
-   - *Production Roadmap*: For files larger than 100MB, integrate Celery or Redis Queue for asynchronous background worker processing with polling/webhook notifications.
-2. **Dynamic Concept Drift Monitoring**:
-   - The system uses static pre-trained model weights. Financial fraud patterns evolve over time (concept drift).
-   - *Production Roadmap*: Integrate Evidently AI or Evidently Cloud to monitor input feature drift (KS-test / PSI) and prediction drift on live production traffic.
-3. **Containerization & Cloud Orchestration**:
-   - Currently tested locally with Uvicorn and Vite.
-   - *Production Roadmap*: Deploy with multi-stage `Dockerfile` (Node build -> Python FastAPI container), Kubernetes ingress with TLS termination, and Redis-backed rate limiting.
-4. **Authentication & Role-Based Access (RBAC)**:
-   - Inference endpoints are currently unauthenticated for portfolio demonstration.
-   - *Production Roadmap*: Implement OAuth2 / JWT bearer token validation separating Fraud Analysts (read/evaluate) from Compliance Officers (threshold tuning).
+### Preprocessing & Feature Alignment
+Input transactions contain 30 features: `Time`, `V1` through `V28` (PCA latent features), and `Amount`. The `ColumnTransformer` applies `RobustScaler` to `Time` and `Amount` while passing through `V1`–`V28` in exact original order, guaranteeing 100% feature index alignment with SHAP explainers.
+
+### Held-Out Test Evaluation (1,250 samples, 37 fraud cases)
+- **Champion Model:** Logistic Regression (`class_weight="balanced"`)
+- **PR-AUC:** `0.9880`
+- **ROC-AUC:** `0.9995`
+- **Recall:** `1.0000` (Zero false negatives)
+- **Precision:** `0.5968` (25 false positives)
+
+### Ground Truth Risk Boundaries
+- **LOW (0–30):** Legitimate baseline transaction $\rightarrow$ Auto-Approve.
+- **MEDIUM (31–70):** Moderate anomaly detected $\rightarrow$ Step-Up Authentication (3DS/MFA).
+- **HIGH (71–89):** Elevated anomaly $\rightarrow$ Route to Fraud Analyst Queue.
+- **CRITICAL (90–100):** Severe fraud vector $\rightarrow$ Immediate Payment Block.
+
+---
+
+## 9. Security & Compliance Considerations
+
+1. **Authentication:** Bcrypt password hashing (work factor 10), short-lived JWT access tokens (15m), and single-use refresh token rotation with immediate token family revocation on reuse attempts.
+2. **Internal API Protection:** The ML microservice rejects requests lacking the shared secret key in `X-Internal-Service-Key`.
+3. **Audit Log Immutability:** The `AuditLog` collection is append-only. Modification and deletion operations trigger hard Mongoose errors.
+4. **Rate Limiting:** Authentication routes are protected by a sliding window rate limiter allowing max 15 attempts/min per IP.
+
+---
+
+## 10. Known Limitations & Future Roadmap
+
+- **Probability Calibration:** The ML service currently outputs raw logistic sigmoid / tree leaf probabilities. Formal calibration (e.g. Platt scaling or Isotonic regression) is recommended before live payment clearing.
+- **MongoDB Replica Sets:** Production multi-document transactions require a replica set configuration (`rs0`).
+- **Future Improvements:**
+  - Streaming Kafka/RabbitMQ ingestion for enterprise transaction feeds.
+  - Champion/Challenger live A/B model routing.
+  - Multi-factor behavioral biometric telemetry.
+
+---
+
+## 11. Documentation Directory
+
+- [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md)
+- [Local Setup Guide](docs/LOCAL_SETUP.md)
+- [Machine Learning Pipeline](docs/ML_PIPELINE.md)
+- [API Reference Specification](docs/API_REFERENCE.md)
+- [Final Engineering Audit Report](docs/FINAL_ENGINEERING_AUDIT.md)
+
+---
+
+## 12. License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

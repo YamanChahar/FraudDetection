@@ -1,0 +1,351 @@
+/* TRACE Design System Theme — Warm Ivory, Deep Charcoal & Terracotta */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Palette Tokens */
+  --bg-primary: #F5F2EA;
+  --surface-sidebar: #25251F;
+  --surface-card: #FCFAF6;
+  --surface-subtle: #EFECE3;
+  --text-primary: #1B1B18;
+  --text-secondary: #5C5A53;
+  --text-muted: #8C897E;
+  --border-stone: #DDD7CD;
+  --border-dark: #3A3A32;
+  --accent-terracotta: #B65D3A;
+  --accent-hover: #9F4E2F;
+
+  /* Semantic Mineral Status Indicators (Strictly No Blue, No Purple) */
+  --status-low-fg: #2E5A36;
+  --status-low-bg: #EEF5F0;
+  --status-low-border: #C6DEC9;
+
+  --status-med-fg: #8F5D18;
+  --status-med-bg: #FDF6E9;
+  --status-med-border: #F2DCAC;
+
+  --status-high-fg: #A83824;
+  --status-high-bg: #FBEBE8;
+  --status-high-border: #F3BEB5;
+
+  --status-neutral-fg: #4A4842;
+  --status-neutral-bg: #EFECE3;
+  --status-neutral-border: #DDD7CD;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numbers for all financial & numerical figures */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Card Container */
+.trace-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-stone);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(37, 37, 31, 0.04);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--accent-terracotta);
+  color: #FCFAF6;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-stone);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-subtle);
+}
+
+/* Mineral Badges */
+.badge-low {
+  background-color: var(--status-low-bg);
+  color: var(--status-low-fg);
+  border: 1px solid var(--status-low-border);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.02em;
+}
+
+.badge-med {
+  background-color: var(--status-med-bg);
+  color: var(--status-med-fg);
+  border: 1px solid var(--status-med-border);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.02em;
+}
+
+.badge-high {
+  background-color: var(--status-high-bg);
+  color: var(--status-high-fg);
+  border: 1px solid var(--status-high-border);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.02em;
+}
+
+.badge-critical {
+  background-color: #F8D7DA;
+  color: #721C24;
+  border: 1px solid #F5C6CB;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-neutral {
+  background-color: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
+  border: 1px solid var(--status-neutral-border);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Button Variants */
+.btn-danger {
+  background-color: #A83824;
+  color: #FCFAF6;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 150ms ease;
+}
+
+.btn-danger:hover {
+  background-color: #8C2C1A;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-stone);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 150ms ease;
+}
+
+.btn-outline:hover {
+  background-color: var(--surface-subtle);
+  border-color: #C5BFB4;
+}
+
+/* Form Controls */
+.trace-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.trace-input,
+.trace-select,
+.trace-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-stone);
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.trace-input:focus,
+.trace-select:focus,
+.trace-textarea:focus {
+  border-color: var(--accent-terracotta);
+  box-shadow: 0 0 0 2px rgba(182, 93, 58, 0.15);
+}
+
+.trace-input:disabled,
+.trace-select:disabled {
+  background-color: var(--surface-subtle);
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+/* Financial Data Tables */
+.trace-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-stone);
+  border-radius: 6px;
+  background-color: var(--surface-card);
+}
+
+.trace-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.trace-table th {
+  background-color: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-stone);
+  white-space: nowrap;
+}
+
+.trace-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-stone);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.trace-table tr:last-child td {
+  border-bottom: none;
+}
+
+.trace-table tbody tr:hover {
+  background-color: rgba(239, 236, 227, 0.5);
+}
+
+/* Dialog & Drawer Overlays */
+.trace-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(37, 37, 31, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.trace-modal {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-stone);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 32px rgba(37, 37, 31, 0.18);
+  z-index: 1000;
+}
+
+.trace-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 540px;
+  background-color: var(--surface-card);
+  border-left: 1px solid var(--border-stone);
+  box-shadow: -8px 0 24px rgba(37, 37, 31, 0.12);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

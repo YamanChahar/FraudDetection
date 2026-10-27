@@ -53,13 +53,19 @@ export async function getDashboardOverview() {
   const volumeAgg = await Transaction.aggregate([
     {
       $match: {
-        timestamp: { $gte: fourteenDaysAgo },
+        $or: [
+          { transactionTimestamp: { $gte: fourteenDaysAgo } },
+          { createdAt: { $gte: fourteenDaysAgo } },
+        ],
       },
     },
     {
       $group: {
         _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$timestamp' },
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: { $ifNull: ['$transactionTimestamp', '$createdAt'] },
+          },
         },
         count: { $sum: 1 },
         totalAmount: { $sum: '$amount' },

@@ -24,9 +24,9 @@ app.use(
   })
 );
 
-// JSON body parser with size limit
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// JSON body parser with size limit (allows batch testing datasets up to 50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Correlation ID tracking
 app.use(correlationIdMiddleware);

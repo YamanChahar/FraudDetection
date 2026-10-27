@@ -66,24 +66,33 @@ export default function BatchTestingPage() {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a valid CSV file');
+      setError('Please upload a valid CSV file');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setError(`File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB limit. Please upload a smaller CSV file.`);
       return;
     }
 
     setFileName(file.name);
+    setError(null);
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const text = event.target.result;
         const lines = text.split('\n').filter((l) => l.trim().length > 0);
         if (lines.length < 2) {
-          alert('CSV file is empty or missing headers');
+          setError('CSV file is empty or missing headers');
           return;
         }
 
         const headers = lines[0].split(',').map((h) => h.trim());
         const rows = [];
-        for (let i = 1; i < lines.length; i++) {
+        const maxRecords = 25000;
+        const totalRows = lines.length - 1;
+
+        for (let i = 1; i <= Math.min(totalRows, maxRecords); i++) {
           const vals = lines[i].split(',').map((v) => v.trim());
           if (vals.length === headers.length) {
             const rowObj = {};
@@ -94,9 +103,14 @@ export default function BatchTestingPage() {
             rows.push(rowObj);
           }
         }
+
+        if (totalRows > maxRecords) {
+          setError(`Dataset contains ${totalRows.toLocaleString()} rows. System capped import to the first ${maxRecords.toLocaleString()} rows.`);
+        }
+
         setParsedRows(rows);
       } catch (err) {
-        alert(`Failed to parse CSV: ${err.message}`);
+        setError(`Failed to parse CSV: ${err.message}`);
       }
     };
     reader.readAsText(file);

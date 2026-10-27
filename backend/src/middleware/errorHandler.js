@@ -46,6 +46,13 @@ export function errorHandler(err, req, res, _next) {
     message = 'MongoDB server is currently unreachable. Please check database service.';
     details = [{ error: err.name, message: err.message }];
   }
+  // Payload Too Large / Entity Too Large (HTTP 413)
+  else if (err.status === 413 || err.statusCode === 413 || err.type === 'entity.too.large') {
+    status = 413;
+    code = 'PAYLOAD_TOO_LARGE';
+    message = 'Request payload exceeds the maximum allowed size limit (50MB). Please reduce the file size or number of records.';
+    details = [{ error: err.name, message: err.message }];
+  }
 
   if (status >= 500) {
     console.error(`[Unhandled Error] Request ${req.id || 'N/A'}:`, err.message || err);

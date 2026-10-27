@@ -14,9 +14,14 @@ server.on('listening', () => {
 
   // Non-blocking initial MongoDB connection attempt
   import('./config/database.js').then(({ connectDatabase }) => {
-    connectDatabase().catch((err) => {
-      console.warn(`[TRACE Backend] Initial MongoDB connection not available: ${err.message}. Backend running in degraded mode.`);
-    });
+    connectDatabase()
+      .then(async () => {
+        const { seedDefaultUsers } = await import('./config/seedDefaults.js');
+        await seedDefaultUsers();
+      })
+      .catch((err) => {
+        console.warn(`[TRACE Backend] Initial MongoDB connection not available: ${err.message}. Backend running in degraded mode.`);
+      });
   });
 });
 
